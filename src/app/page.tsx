@@ -51,8 +51,11 @@ export default function DashboardPage() {
     );
   }
 
+  const currentUserId = currentUser?.id || "guest";
+
   // Filtered Saved Leads
   const filteredSavedLeads = savedLeads
+    .filter(sl => sl.userId === currentUserId)
     .map(sl => {
       const detail = leads.find(l => l.id === sl.leadId);
       return { ...sl, detail };
@@ -67,6 +70,7 @@ export default function DashboardPage() {
       
       return matchesSearch && matchesCampaign;
     });
+
 
   return (
     <div className="min-h-screen bg-background text-text-primary flex flex-col font-sans select-none">

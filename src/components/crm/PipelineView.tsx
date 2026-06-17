@@ -25,7 +25,7 @@ const X = ({ className }: { className?: string }) => (
 );
 
 export default function PipelineView({ onLeadClick }: PipelineViewProps) {
-  const { savedLeads, leads, updateLeadStatus, updateLeadNotes, campaigns, createCampaign } = useAppStore();
+  const { savedLeads, leads, updateLeadStatus, updateLeadNotes, campaigns, createCampaign, currentUser } = useAppStore();
   const [newCampaignName, setNewCampaignName] = useState("");
   const [newCampaignDesc, setNewCampaignDesc] = useState("");
   const [showCampaignModal, setShowCampaignModal] = useState(false);
@@ -121,8 +121,11 @@ export default function PipelineView({ onLeadClick }: PipelineViewProps) {
     return "text-rose-400 bg-rose-500/10 border-rose-500/20";
   };
 
-  // Build items mapping: matching savedLeads with lead details
+  const currentUserId = currentUser?.id || "guest";
+
+  // Build items mapping: matching savedLeads with lead details, filtered by current user
   const pipelineLeads = savedLeads
+    .filter(sl => sl.userId === currentUserId)
     .map(sl => {
       const leadDetail = leads.find(l => l.id === sl.leadId);
       return {
@@ -137,6 +140,7 @@ export default function PipelineView({ onLeadClick }: PipelineViewProps) {
       }
       return true;
     });
+
 
   const renderColumn = (colStatus: OutreachStatus) => {
     const colLeads = pipelineLeads.filter(l => l.status === colStatus);

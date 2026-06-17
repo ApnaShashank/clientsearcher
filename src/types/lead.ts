@@ -34,6 +34,7 @@ export interface Lead {
 }
 
 export interface SavedLeadDetails {
+  userId: string;
   leadId: string;
   notes: string;
   followUpDate?: string;
@@ -41,6 +42,7 @@ export interface SavedLeadDetails {
   campaignId?: string;
   savedAt: string;
 }
+
 
 export interface Campaign {
   id: string;

@@ -28,7 +28,7 @@ const Instagram = ({ className }: { className?: string }) => (
 
 export default function ResultsTable({ onRowClick }: ResultsTableProps) {
   const { 
-    searchResults, savedLeads, saveLead, removeSavedLead, updateLeadStatus, isSearching 
+    searchResults, savedLeads, saveLead, removeSavedLead, updateLeadStatus, isSearching, currentUser 
   } = useAppStore();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
@@ -47,13 +47,15 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
   };
 
   const getLeadSaveState = (id: string) => {
-    const saved = savedLeads.find(sl => sl.leadId === id);
+    const currentUserId = currentUser?.id || "guest";
+    const saved = savedLeads.find(sl => sl.leadId === id && sl.userId === currentUserId);
     return {
       isSaved: !!saved,
       status: saved?.status || "Not Contacted",
       campaignId: saved?.campaignId
     };
   };
+
 
   const getStatusStyle = (status: OutreachStatus) => {
     switch (status) {

@@ -139,22 +139,26 @@ export const useAppStore = create<AppState>()(
       leads: [], // Will populate client-side to prevent SSR mismatch or generated inside hydration
       savedLeads: [
         {
+          userId: "user_2",
           leadId: "lead_1",
           status: "Interested",
-          notes: "Spoke with Dr. John's receptionist. Requested proposal deck next Tuesday.",
+          notes: "Spoke with The Rameshwaram Cafe manager. Scheduled proposal discussion for next Tuesday.",
           followUpDate: "2026-06-24",
           campaignId: "camp_1",
           savedAt: "2026-06-15"
         },
         {
+          userId: "user_2",
           leadId: "lead_5",
           status: "Contacted",
-          notes: "Sent cold email regarding outdated website mobile optimization.",
+          notes: "Contacted The Taj Mahal Palace guest relations regarding mobile site analytics.",
           followUpDate: "2026-06-20",
           campaignId: "camp_2",
           savedAt: "2026-06-16"
         }
       ],
+
+
       campaigns: defaultCampaigns,
       activities: [
         {
@@ -219,15 +223,16 @@ export const useAppStore = create<AppState>()(
       },
       
       searchParams: {
-        country: "United States",
-        state: "New York",
-        city: "New York City",
+        country: "India",
+        state: "Karnataka",
+        city: "Bengaluru",
         district: "",
         pinCode: "",
-        category: "Dental Clinic",
+        category: "Restaurant",
         customCategory: "",
         limit: 25,
       },
+
       filters: initialFilters,
       searchResults: [],
       isSearching: false,
@@ -390,7 +395,8 @@ export const useAppStore = create<AppState>()(
 
       // Actions - Leads & CRM
       saveLead: (leadId, status = "Not Contacted", notes = "", followUpDate, campaignId) => {
-        const isAlreadySaved = get().savedLeads.some(sl => sl.leadId === leadId);
+        const currentUserId = get().currentUser?.id || "guest";
+        const isAlreadySaved = get().savedLeads.some(sl => sl.leadId === leadId && sl.userId === currentUserId);
         const leadObj = get().leads.find(l => l.id === leadId) || get().searchResults.find(l => l.id === leadId);
         const name = leadObj?.businessName || "Unknown Lead";
 
@@ -399,6 +405,7 @@ export const useAppStore = create<AppState>()(
         }
 
         const newSaved: SavedLeadDetails = {
+          userId: currentUserId,
           leadId,
           status,
           notes,
@@ -415,23 +422,25 @@ export const useAppStore = create<AppState>()(
       },
       
       removeSavedLead: (leadId) => {
+        const currentUserId = get().currentUser?.id || "guest";
         const leadObj = get().leads.find(l => l.id === leadId);
         const name = leadObj?.businessName || "Unknown Lead";
 
         set(state => ({
-          savedLeads: state.savedLeads.filter(sl => sl.leadId !== leadId)
+          savedLeads: state.savedLeads.filter(sl => !(sl.leadId === leadId && sl.userId === currentUserId))
         }));
 
         get().addActivity(leadId, name, "Removed Lead from Workspace");
       },
       
       updateLeadStatus: (leadId, status) => {
+        const currentUserId = get().currentUser?.id || "guest";
         const leadObj = get().leads.find(l => l.id === leadId) || get().searchResults.find(l => l.id === leadId);
         const name = leadObj?.businessName || "Unknown Lead";
 
         set(state => ({
           savedLeads: state.savedLeads.map(sl => 
-            sl.leadId === leadId ? { ...sl, status } : sl
+            (sl.leadId === leadId && sl.userId === currentUserId) ? { ...sl, status } : sl
           )
         }));
 
@@ -459,12 +468,13 @@ export const useAppStore = create<AppState>()(
       },
       
       updateLeadNotes: (leadId, notes, followUpDate) => {
+        const currentUserId = get().currentUser?.id || "guest";
         const leadObj = get().leads.find(l => l.id === leadId);
         const name = leadObj?.businessName || "Unknown Lead";
 
         set(state => ({
           savedLeads: state.savedLeads.map(sl => 
-            sl.leadId === leadId ? { ...sl, notes, followUpDate } : sl
+            (sl.leadId === leadId && sl.userId === currentUserId) ? { ...sl, notes, followUpDate } : sl
           )
         }));
 
@@ -472,6 +482,7 @@ export const useAppStore = create<AppState>()(
       },
 
       assignLeadToCampaign: (leadId, campaignId) => {
+        const currentUserId = get().currentUser?.id || "guest";
         const camp = get().campaigns.find(c => c.id === campaignId);
         const campName = camp?.name || "Campaign";
         const leadObj = get().leads.find(l => l.id === leadId);
@@ -479,12 +490,13 @@ export const useAppStore = create<AppState>()(
 
         set(state => ({
           savedLeads: state.savedLeads.map(sl => 
-            sl.leadId === leadId ? { ...sl, campaignId } : sl
+            (sl.leadId === leadId && sl.userId === currentUserId) ? { ...sl, campaignId } : sl
           )
         }));
 
         get().addActivity(leadId, name, `Assigned to campaign "${campName}"`);
       },
+
 
       // Actions - Campaigns
       createCampaign: (name, description) => {

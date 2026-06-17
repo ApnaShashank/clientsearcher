@@ -14,7 +14,10 @@ import {
 
 export default function AnalyticsDashboard() {
   const mounted = useMounted();
-  const { savedLeads, leads, campaigns } = useAppStore();
+  const { savedLeads: storeSavedLeads, leads, campaigns, currentUser } = useAppStore();
+  const currentUserId = currentUser?.id || "guest";
+  const savedLeads = storeSavedLeads.filter(sl => sl.userId === currentUserId);
+
 
   if (!mounted) {
     return (

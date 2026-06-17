@@ -182,10 +182,11 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
             )}
           </div>
         </div>
-
-        {/* Interactive Authentication Modal */}
-        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </header>
+
+      {/* Interactive Authentication Modal */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-45 bg-[#111111]/95 backdrop-blur-md border-t border-border flex justify-around items-center py-2 px-1 shadow-2xl select-none">

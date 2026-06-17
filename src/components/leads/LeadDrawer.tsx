@@ -16,7 +16,8 @@ interface LeadDrawerProps {
 type TabType = "overview" | "seo" | "ai-outreach" | "crm";
 
 export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
-  const { savedLeads, saveLead, updateLeadStatus, updateLeadNotes, campaigns, assignLeadToCampaign } = useAppStore();
+  const { savedLeads, saveLead, updateLeadStatus, updateLeadNotes, campaigns, assignLeadToCampaign, currentUser } = useAppStore();
+
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   
   // Local CRM Inputs
@@ -32,8 +33,10 @@ export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
   const [copiedText, setCopiedText] = useState(false);
 
   // Sync inputs with state when a new lead is clicked/saved
-  const savedLeadInfo = lead ? savedLeads.find(sl => sl.leadId === lead.id) : null;
+  const currentUserId = currentUser?.id || "guest";
+  const savedLeadInfo = lead ? savedLeads.find(sl => sl.leadId === lead.id && sl.userId === currentUserId) : null;
   const isSaved = !!savedLeadInfo;
+
 
   useEffect(() => {
     if (lead) {
@@ -343,103 +346,116 @@ export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
                 )}
               </div>
             </div>
-          )}
-
-          {/* AI OUTREACH TAB */}
+          )}          {/* AI OUTREACH TAB */}
           {activeTab === "ai-outreach" && (
             <div className="space-y-5">
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div className="flex justify-between items-center border-b border-border/50 pb-2.5">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    AI Outreach Generator
-                  </h3>
+              {!currentUser ? (
+                <div className="bg-card border border-border rounded-xl p-8 text-center space-y-4 shadow-lg select-none">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-text-primary">Unlock AI Outreach Tools</h3>
+                    <p className="text-xs text-text-muted mt-1.5 max-w-sm mx-auto">
+                      Please sign in or register an account to use our AI-tailored cold emails, WhatsApp scripts, proposals, and marketing audits.
+                    </p>
+                  </div>
                 </div>
-
-                <div className="space-y-4">
-                  {/* Select outreach copy type */}
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {[
-                      { id: "email", label: "Cold Email" },
-                      { id: "whatsapp", label: "WhatsApp" },
-                      { id: "proposal", label: "Proposal" },
-                      { id: "followup", label: "Follow-up" },
-                      { id: "analysis", label: "Marketing Audit" }
-                    ].map((tool) => (
-                      <button
-                        key={tool.id}
-                        type="button"
-                        onClick={() => setAiType(tool.id as any)}
-                        className={`py-2 px-1 rounded-md text-[10px] font-bold border transition text-center cursor-pointer ${
-                          aiType === tool.id
-                            ? "bg-border text-primary border-primary/20"
-                            : "bg-transparent text-text-muted border-border hover:text-text-primary"
-                        }`}
-                      >
-                        {tool.label}
-                      </button>
-                    ))}
+              ) : (
+                <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                  <div className="flex justify-between items-center border-b border-border/50 pb-2.5">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      AI Outreach Generator
+                    </h3>
                   </div>
 
-                  {/* Generate Button */}
-                  <button
-                    onClick={handleGenerateAI}
-                    disabled={isAiLoading}
-                    className="w-full btn-primary rounded-lg py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isAiLoading ? (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        <span>Generating tailored outreach drafts...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-black" />
-                        <span>Generate with GPT-4o</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Errors */}
-                  {aiError && (
-                    <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-lg text-xs">
-                      {aiError}
-                    </div>
-                  )}
-
-                  {/* Output Preview */}
-                  {aiOutput && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center bg-background border border-border border-b-0 px-4 py-2 rounded-t-lg">
-                        <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider">Generated Copy Output</span>
+                  <div className="space-y-4">
+                    {/* Select outreach copy type */}
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[
+                        { id: "email", label: "Cold Email" },
+                        { id: "whatsapp", label: "WhatsApp" },
+                        { id: "proposal", label: "Proposal" },
+                        { id: "followup", label: "Follow-up" },
+                        { id: "analysis", label: "Marketing Audit" }
+                      ].map((tool) => (
                         <button
-                          onClick={handleCopyToClipboard}
-                          className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-primary transition cursor-pointer"
+                          key={tool.id}
+                          type="button"
+                          onClick={() => setAiType(tool.id as any)}
+                          className={`py-2 px-1 rounded-md text-[10px] font-bold border transition text-center cursor-pointer ${
+                            aiType === tool.id
+                              ? "bg-border text-primary border-primary/20"
+                              : "bg-transparent text-text-muted border-border hover:text-text-primary"
+                          }`}
                         >
-                          {copiedText ? (
-                            <>
-                              <Check className="h-3 w-3 text-emerald-500" />
-                              <span className="text-emerald-500 font-semibold">Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              <span>Copy Copy</span>
-                            </>
-                          )}
+                          {tool.label}
                         </button>
-                      </div>
-                      <div className="bg-background border border-border p-4 rounded-b-lg text-xs leading-relaxed text-text-primary font-mono whitespace-pre-wrap max-h-[280px] overflow-y-auto">
-                        {aiOutput}
-                      </div>
+                      ))}
                     </div>
-                  )}
+
+                    {/* Generate Button */}
+                    <button
+                      onClick={handleGenerateAI}
+                      disabled={isAiLoading}
+                      className="w-full btn-primary rounded-lg py-2.5 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isAiLoading ? (
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          <span>Generating tailored outreach drafts...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-black" />
+                          <span>Generate with GPT-4o</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Errors */}
+                    {aiError && (
+                      <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-xs">
+                        {aiError}
+                      </div>
+                    )}
+
+                    {/* Output Preview */}
+                    {aiOutput && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center bg-background border border-border border-b-0 px-4 py-2 rounded-t-lg">
+                          <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider">Generated Copy Output</span>
+                          <button
+                            onClick={handleCopyToClipboard}
+                            className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-primary transition cursor-pointer"
+                          >
+                            {copiedText ? (
+                              <>
+                                <Check className="h-3 w-3 text-emerald-500" />
+                                <span className="text-emerald-500 font-semibold">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3" />
+                                <span>Copy Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <div className="bg-background border border-border p-4 rounded-b-lg text-xs leading-relaxed text-text-primary font-mono whitespace-pre-wrap max-h-[280px] overflow-y-auto">
+                          {aiOutput}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* CRM TAB */}
+
           {activeTab === "crm" && (
             <div className="space-y-5">
               <div className="bg-card border border-border rounded-xl p-5 space-y-4">

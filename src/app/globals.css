@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0B0B0C;
+  --card: #111111;
+  --card-hover: #161617;
+  --border: #1F1F1F;
+  --text-primary: #FFFFFF;
+  --text-muted: #B4B4B4;
+  --text-dark: #444444;
+}
+
+:root.light, .light {
+  --background: #F8F9FA;
+  --card: #FFFFFF;
+  --card-hover: #F1F3F5;
+  --border: #E9ECEF;
+  --text-primary: #111111;
+  --text-muted: #6C757D;
+  --text-dark: #ADB5BD;
+}
+
+@theme {
+  --color-primary: #38BDF8;
+  --color-secondary: #848484;
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-dark: var(--text-dark);
+  
+  --font-sans: "Inter", "Geist", "Satoshi", system-ui, -apple-system, sans-serif;
+  
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-in: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pulse-subtle: pulse-subtle 2s infinite ease-in-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Selection Highlight */
+::selection {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: #38BDF8;
+}
+
+/* Premium gradient glows for borders */
+.glow-border {
+  position: relative;
+}
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, #1F1F1F, #38BDF8, #1F1F1F);
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0.15;
+  transition: opacity 0.3s;
+}
+.glow-border:hover::after {
+  opacity: 0.4;
+}
+
+/* Linear style modern buttons */
+.btn-primary {
+  background-color: #38BDF8;
+  color: #000000;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  background-color: #58caff;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}

@@ -79,6 +79,27 @@ export interface User {
   isBanned: boolean;
   joinedAt: string;
   password?: string;
+  totalEarnings?: number;
+  pendingEarnings?: number;
+  withdrawalStatus?: "None" | "Pending" | "Paid";
+  qrCodeUrl?: string;
+  paymentReceiptUrl?: string;
+}
+
+export interface ForwardedLead {
+  id: string;
+  leadId: string;
+  businessName: string;
+  category: string;
+  address: string;
+  phoneNumber: string;
+  website?: string;
+  forwardedBy: string;
+  forwardedByName: string;
+  forwardedAt: string;
+  status: "Under Review" | "In Talk with Client" | "Approved" | "Rejected";
+  notes?: string;
+  rewardAmount?: number;
 }
 
 export interface SearchFilters {

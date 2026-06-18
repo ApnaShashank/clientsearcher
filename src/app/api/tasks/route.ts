@@ -47,6 +47,20 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
 
+      // Add system broadcast notification to all employees
+      if (!serverState.systemNotifications) {
+        serverState.systemNotifications = [];
+      }
+      serverState.systemNotifications.unshift({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        recipientId: "all",
+        title: "New Task Dispatched",
+        message: `A new task "${newTask.businessName}" has been dispatched. Grab it now on the Admin Tasks board!`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        senderName: "Administrator"
+      });
+
       return NextResponse.json({ success: true, task: newTask });
     }
 

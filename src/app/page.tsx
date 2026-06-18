@@ -12,6 +12,7 @@ const PipelineView = dynamic(() => import("@/components/crm/PipelineView"), { ss
 const AnalyticsDashboard = dynamic(() => import("@/components/analytics/AnalyticsDashboard"), { ssr: false });
 const AdminPanel = dynamic(() => import("@/components/admin/AdminPanel"), { ssr: false });
 const TaskBoard = dynamic(() => import("@/components/tasks/TaskBoard"), { ssr: false });
+const RewardsDashboard = dynamic(() => import("@/components/rewards/RewardsDashboard"), { ssr: false });
 import { useAppStore } from "@/store/useAppStore";
 import { useMounted } from "@/hooks/useMounted";
 import { Lead } from "@/types/lead";
@@ -90,6 +91,11 @@ export default function DashboardPage() {
         {/* ADMIN TAB */}
         {activeTab === "admin" && currentUser?.role === "admin" && (
           <AdminPanel />
+        )}
+
+        {/* REWARDS TAB */}
+        {activeTab === "rewards" && currentUser?.role === "user" && (
+          <RewardsDashboard />
         )}
 
       </main>

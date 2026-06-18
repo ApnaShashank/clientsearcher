@@ -1,4 +1,4 @@
-import { AdminTask, SystemNotification, PortfolioWebsite } from "@/types/lead";
+import { AdminTask, SystemNotification, PortfolioWebsite, ForwardedLead } from "@/types/lead";
 
 export interface ServerState {
   onlineUsers: Record<string, number>; // sessionId -> lastActiveTimestamp
@@ -11,9 +11,8 @@ export interface ServerState {
   adminTasks: AdminTask[];
   systemNotifications: SystemNotification[];
   portfolioWebsites: PortfolioWebsite[];
+  forwardedLeads: ForwardedLead[];
 }
-
-
 
 declare global {
   var __serverState: ServerState | undefined;
@@ -109,6 +108,7 @@ if (!global.__serverState) {
     notifications: [],
     adminTasks: [],
     systemNotifications: [],
+    forwardedLeads: [],
     portfolioWebsites: [
       {
         id: "port_1",

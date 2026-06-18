@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { 
-  Lead, SavedLeadDetails, Campaign, Activity, SearchLog, User, SearchFilters, OutreachStatus, AdminTask, SystemNotification, PortfolioWebsite 
+  Lead, SavedLeadDetails, Campaign, Activity, SearchLog, User, SearchFilters, OutreachStatus, AdminTask, SystemNotification, PortfolioWebsite, ForwardedLead
 } from "@/types/lead";
 import { generateMockLeads } from "@/lib/mockLeads";
 
@@ -89,6 +89,13 @@ interface AppState {
   fetchPortfolio: () => Promise<void>;
   addPortfolioWebsite: (name: string, url: string, businessType: string, address: string, type: "demo" | "client") => Promise<any>;
   deletePortfolioWebsite: (id: string) => Promise<void>;
+
+  // Actions - Forwarded Leads & Rewards
+  forwardedLeads: ForwardedLead[];
+  fetchForwardedLeads: () => Promise<void>;
+  updateForwardedLeadStatus: (leadId: string, status: ForwardedLead["status"], notes?: string) => Promise<any>;
+  submitWithdrawalRequest: (userId: string, qrCodeUrl: string) => Promise<any>;
+  approveWithdrawal: (userId: string, paymentReceiptUrl: string) => Promise<any>;
 }
 
 
@@ -233,6 +240,7 @@ export const useAppStore = create<AppState>()(
       adminTasks: [],
       systemNotifications: [],
       portfolioWebsites: [],
+      forwardedLeads: [],
       theme: "dark",
 
       toggleTheme: () => {
@@ -291,7 +299,7 @@ export const useAppStore = create<AppState>()(
           const res = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, name })
           });
           if (!res.ok) {
             const data = await res.json();
@@ -483,7 +491,8 @@ export const useAppStore = create<AppState>()(
               leadId,
               leadDetails: leadObj,
               userEmail: get().currentUser?.email || "anonymous@localead",
-              userName: get().currentUser?.name || "Anonymous User"
+              userName: get().currentUser?.name || "Anonymous User",
+              userId: get().currentUser?.id
             })
           })
           .then(res => {
@@ -915,6 +924,113 @@ export const useAppStore = create<AppState>()(
           await get().fetchPortfolio();
         } catch (err: any) {
           alert(err.message || "Failed to delete website");
+          throw err;
+        }
+      },
+
+      fetchForwardedLeads: async () => {
+        try {
+          const res = await fetch("/api/admin/metrics");
+          if (res.ok) {
+            const data = await res.json();
+            set({ forwardedLeads: data.forwardedLeads || [] });
+          }
+        } catch (err) {
+          console.error("Failed to fetch forwarded leads:", err);
+        }
+      },
+
+      updateForwardedLeadStatus: async (leadId, status, notes) => {
+        try {
+          const res = await fetch("/api/admin/metrics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "updateForwardedLeadStatus",
+              payload: { leadId, status, notes }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to update status");
+          }
+          const data = await res.json();
+          set({ forwardedLeads: data.forwardedLeads || [] });
+          
+          const usersRes = await fetch("/api/admin/metrics");
+          if (usersRes.ok) {
+            const usersData = await usersRes.json();
+            set({ users: usersData.users || [] });
+            const currentUserId = get().currentUser?.id;
+            const updatedMe = (usersData.users || []).find((u: any) => u.id === currentUserId);
+            if (updatedMe) {
+              set({ currentUser: updatedMe });
+            }
+          }
+          return data;
+        } catch (err: any) {
+          alert(err.message || "Failed to update forwarded lead status");
+          throw err;
+        }
+      },
+
+      submitWithdrawalRequest: async (userId, qrCodeUrl) => {
+        try {
+          const res = await fetch("/api/admin/metrics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "submitWithdrawalRequest",
+              payload: { userId, qrCodeUrl }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to submit withdrawal request");
+          }
+          const data = await res.json();
+          set({ users: data.users || [] });
+          
+          const updatedMe = (data.users || []).find((u: any) => u.id === userId);
+          if (updatedMe) {
+            set({ currentUser: updatedMe });
+          }
+          
+          alert("Withdrawal request submitted! QR image sent to administrator.");
+          return data;
+        } catch (err: any) {
+          alert(err.message || "Failed to submit request");
+          throw err;
+        }
+      },
+
+      approveWithdrawal: async (userId, paymentReceiptUrl) => {
+        try {
+          const res = await fetch("/api/admin/metrics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "approveWithdrawal",
+              payload: { userId, paymentReceiptUrl }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to approve withdrawal");
+          }
+          const data = await res.json();
+          set({ users: data.users || [] });
+          
+          const currentUserId = get().currentUser?.id;
+          const updatedMe = (data.users || []).find((u: any) => u.id === currentUserId);
+          if (updatedMe) {
+            set({ currentUser: updatedMe });
+          }
+          
+          alert("Withdrawal request approved successfully! Payment receipt attached.");
+          return data;
+        } catch (err: any) {
+          alert(err.message || "Failed to approve payout");
           throw err;
         }
       },

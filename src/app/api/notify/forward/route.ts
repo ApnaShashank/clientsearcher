@@ -8,7 +8,7 @@ if (!(serverState as any).notifications) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { leadId, leadDetails, userEmail, userName } = await request.json();
+    const { leadId, leadDetails, userEmail, userName, userId = "guest" } = await request.json();
 
     if (!leadDetails) {
       return NextResponse.json({ error: "Missing lead details" }, { status: 400 });
@@ -26,6 +26,7 @@ Hello Admin,
 A new client lead has been forwarded by a client hunt operator:
 - Operator Name: ${userName}
 - Operator Email: ${userEmail}
+- Operator ID: ${userId}
 
 --- CLIENT LEAD DETAILS ---
 - Business Name: ${leadDetails.businessName}
@@ -61,7 +62,42 @@ Please review the logs in the admin administration panel.
       (serverState as any).notifications = (serverState as any).notifications.slice(0, 100);
     }
 
-    // 3. Add to system activities audit logs
+    // 3. Add to serverState.forwardedLeads
+    if (!serverState.forwardedLeads) {
+      serverState.forwardedLeads = [];
+    }
+    const forwardedItem = {
+      id: `fwd_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      leadId,
+      businessName: leadDetails.businessName,
+      category: leadDetails.category,
+      address: leadDetails.address,
+      phoneNumber: leadDetails.phoneNumber || "",
+      website: leadDetails.website || "",
+      forwardedBy: userId,
+      forwardedByName: userName,
+      forwardedAt: new Date().toISOString(),
+      status: "Under Review" as const,
+      notes: "Newly forwarded lead from employee.",
+      rewardAmount: 0
+    };
+    serverState.forwardedLeads.unshift(forwardedItem);
+
+    // 4. Add system notification alert for admin dropdown
+    if (!serverState.systemNotifications) {
+      serverState.systemNotifications = [];
+    }
+    serverState.systemNotifications.unshift({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      recipientId: "admin",
+      title: "New Lead Forwarded",
+      message: `Employee "${userName}" forwarded lead "${leadDetails.businessName}" to admin review. Check Task board/dispatcher!`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      senderName: userName
+    });
+
+    // 5. Add to system activities audit logs
     serverState.activities.unshift({
       id: `act_${Date.now()}`,
       leadId,

@@ -5,7 +5,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { useMounted } from "@/hooks/useMounted";
 import { 
   Search, Briefcase, Bookmark, BarChart3, Shield, LogOut, User as UserIcon, Settings, RefreshCw, Sun, Moon, ClipboardList,
-  Bell, Download, Globe
+  Bell, Download, Globe, Award, X
 } from "lucide-react";
 import AuthModal from "./AuthModal";
 import SettingsModal from "./SettingsModal";
@@ -29,6 +29,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
   const [authDefaultRegister, setAuthDefaultRegister] = useState(false);
+  const [selectedNotifDetail, setSelectedNotifDetail] = useState<any>(null);
 
   const unreadCount = systemNotifications ? systemNotifications.filter(n => !n.read).length : 0;
 
@@ -84,6 +85,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
     { id: "tasks", label: "Admin Tasks", shortLabel: "Tasks", icon: ClipboardList },
     { id: "analytics", label: "Analytics", shortLabel: "Analytics", icon: BarChart3 },
   ];
+
+  if (currentUser && currentUser.role !== "admin") {
+    navItems.push({ id: "rewards", label: "My Rewards", shortLabel: "Rewards", icon: Award });
+  }
 
   if (currentUser?.role === "admin") {
     navItems.push({ id: "admin", label: "Admin Panel", shortLabel: "Admin", icon: Shield });
@@ -197,6 +202,8 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                             key={notif.id}
                             onClick={() => {
                               if (!notif.read) markNotificationRead(notif.id);
+                              setSelectedNotifDetail(notif);
+                              setShowNotificationsMenu(false);
                             }}
                             className={`p-2.5 text-xs transition-all duration-200 cursor-pointer ${
                               notif.read ? "opacity-75 hover:bg-card-hover/20" : "bg-primary/5 hover:bg-primary/10 border-l-2 border-primary"
@@ -335,9 +342,63 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
       {/* Portfolio & Demo Websites Modal */}
       <PortfolioModal isOpen={isPortfolioOpen} onClose={() => setIsPortfolioOpen(false)} />
 
+      {/* Expanded Notification Details Modal (बड़ा नोटिफिकेशन विंडो) */}
+      {selectedNotifDetail && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in select-none" style={{ position: "fixed" }}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <Bell className="h-4.5 w-4.5 text-primary" />
+                <span>Notification Details</span>
+              </h3>
+              <button 
+                onClick={() => setSelectedNotifDetail(null)}
+                className="text-text-muted hover:text-text-primary cursor-pointer p-1.5 rounded-lg border border-border"
+                aria-label="Close details"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs leading-relaxed">
+              <div className="bg-background/60 p-4.5 rounded-xl border border-border/80 space-y-3.5">
+                <div className="flex justify-between items-start gap-3 flex-wrap">
+                  <span className="font-extrabold text-text-primary text-sm tracking-tight">
+                    {selectedNotifDetail.title}
+                  </span>
+                  <span className="text-[10px] text-text-muted font-mono font-bold bg-border/60 px-2 py-0.5 rounded">
+                    {selectedNotifDetail.timestamp ? new Date(selectedNotifDetail.timestamp).toLocaleString() : "Time N/A"}
+                  </span>
+                </div>
+
+                <div className="border-t border-border/40 pt-3 text-text-muted font-medium text-xs whitespace-pre-wrap leading-relaxed">
+                  {selectedNotifDetail.message}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-[10px] text-text-muted font-mono bg-card-hover/20 px-3 py-2 rounded-lg border border-border/30">
+                <span>Sender: <strong className="text-text-primary">{selectedNotifDetail.senderName || "System"}</strong></span>
+                {selectedNotifDetail.recipientId && (
+                  <span>Recipient: <strong className="text-text-primary">{selectedNotifDetail.recipientId === "all" ? "All" : "Me"}</strong></span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedNotifDetail(null)}
+                className="btn-primary px-5 py-2.5 rounded-lg font-bold text-xs cursor-pointer"
+              >
+                Close / ठीक है
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-45 bg-[#111111]/95 backdrop-blur-md border-t border-border flex flex-row flex-nowrap justify-between items-center h-14 px-1 shadow-2xl select-none">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] w-full bg-[#111111]/95 backdrop-blur-md border-t border-border flex flex-row flex-nowrap justify-between items-center h-14 px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] select-none pointer-events-auto" style={{ transform: "translate3d(0, 0, 0)", position: "fixed" }}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

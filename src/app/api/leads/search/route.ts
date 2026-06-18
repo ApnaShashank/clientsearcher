@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       customCategory = "", 
       limit = 10,
       userId = "anonymous",
-      userName = "Anonymous User"
+      userName = "Anonymous User",
+      filters = null
     } = body;
 
     const searchTerm = customCategory || category;
@@ -23,9 +24,16 @@ export async function POST(request: NextRequest) {
     
     console.log(`Performing live lead search for "${searchTerm}" in "${locationQuery}"...`);
 
+    // Helper to rotate between multiple comma-separated keys
+    const getRotatedKey = (rawKeys?: string) => {
+      if (!rawKeys) return "";
+      const keys = rawKeys.split(",").map(k => k.trim()).filter(k => k.length > 0);
+      return keys.length > 0 ? keys[Math.floor(Math.random() * keys.length)] : "";
+    };
+
     // Fetch keys from server override first, falling back to process env
-    const tavilyKey = serverState.customApiKeys.TAVILY_API_KEY || process.env.TAVILY_API_KEY;
-    const openaiKey = serverState.customApiKeys.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    const tavilyKey = getRotatedKey(serverState.customApiKeys.TAVILY_API_KEY || process.env.TAVILY_API_KEY);
+    const openaiKey = getRotatedKey(serverState.customApiKeys.OPENAI_API_KEY || process.env.OPENAI_API_KEY);
     
     let searchContext = "";
     
@@ -59,8 +67,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 400 });
     }
 
-    // Call OpenAI GPT-4o to generate/enrich structured Lead objects
-    const systemPrompt = `You are a premium B2B Lead Generation engine. Your task is to output a JSON array of high-quality business leads matching the user's request.
+    // Dynamic instructions based on selected search filters
+    let filterInstructions = "";
+    if (filters) {
+      if (filters.recentlyOpened) {
+        filterInstructions += "\n- Ensure ALL businesses are new or have very few reviews (between 5 and 30 reviews). This is extremely important.";
+      } else if (filters.onlyPopular) {
+        filterInstructions += "\n- Ensure ALL businesses are highly popular (above 100 reviews).";
+      } else if (filters.highReviewCount) {
+        filterInstructions += "\n- Ensure ALL businesses have a very high review count (above 250 reviews).";
+      } else if (filters.minReviews > 0) {
+        filterInstructions += `\n- Ensure ALL businesses have at least ${filters.minReviews} reviews.`;
+      } else {
+        // Default to returning a mix, including small businesses with 5 to 15 reviews
+        filterInstructions += "\n- Generate a natural, diverse mix of review counts. Include several small/new businesses with only 5 to 15 reviews so the operator can target smaller clients.";
+      }
+
+      if (filters.minRating > 0) {
+        filterInstructions += `\n- Ensure ALL businesses have a Google rating of at least ${filters.minRating}.`;
+      }
+
+      if (filters.hasWebsite) {
+        filterInstructions += "\n- Ensure ALL businesses have a valid website URL.";
+      } else if (filters.noWebsite) {
+        filterInstructions += "\n- Ensure ALL businesses do NOT have a website (set website: \"\").";
+      }
+
+      if (filters.oldWebsite) {
+        filterInstructions += "\n- Ensure ALL businesses have a website with a low SEO score (under 65) and outdated features.";
+      }
+
+      if (filters.noSsl) {
+        filterInstructions += "\n- Ensure ALL businesses have a website without SSL secure encryption (set sslEnabled: false).";
+      }
+
+      if (filters.hasContactNumber) {
+        filterInstructions += "\n- Ensure ALL businesses have a listed contact phone number.";
+      }
+
+      if (filters.hasEmail) {
+        filterInstructions += "\n- Ensure ALL businesses have a listed business email address.";
+      }
+    } else {
+      filterInstructions += "\n- Generate a natural, diverse mix of review counts. Include both small businesses (e.g., 5 to 15 reviews) and larger established ones.";
+    }
+
+    // Generate random seed to guarantee completely unique names and details for different calls
+    const randomSeed = Math.random().toString(36).substring(7);
+
+    // Call OpenAI GPT-4o-mini to generate/enrich structured Lead objects
+    const systemPrompt = `You are a B2B Lead Generation engine (Seed: ${randomSeed}). Your task is to output a JSON array of high-quality business leads matching the user's request.
 ${searchContext ? `Use the following search context as a reference to include REAL businesses: ${searchContext}` : `Since no search context is available, generate highly realistic local businesses in the requested area.`}
 
 You must return EXACTLY a JSON array of ${limit} Lead objects. Do NOT wrap in markdown formatting (like \`\`\`json). Output raw JSON string only.
@@ -74,7 +130,7 @@ interface Lead {
   reviewsCount: number; // integer between 5 and 600
   address: string; // full realistic address matching the searched location
   phoneNumber: string; // realistic phone number matching the country format
-  website: string; // valid url, or empty string if they don't have one (approx 15% shouldn't have a website)
+  website: string; // valid url, or empty string if they don't have one
   email: string; // realistic business email (e.g. contact@businessname.com or info@...)
   googleMapsUrl: string; // realistic maps search link
   facebookUrl?: string; // facebook link or omit
@@ -88,7 +144,7 @@ interface Lead {
   lastUpdated: string; // YYYY-MM-DD format within the last 5 days
 }
 
-Make sure details like email, phone numbers, and websites are highly relevant to the business name. Ensure the address contains the city: "${city}".`;
+Make sure details like email, phone numbers, and websites are highly relevant to the business name. Ensure the address contains the city: "${city}".${filterInstructions}`;
 
     const userPrompt = `Generate ${limit} leads for "${searchTerm}" in "${city}, ${state || "N/A"}, ${country}"`;
 
@@ -99,7 +155,7 @@ Make sure details like email, phone numbers, and websites are highly relevant to
         "Authorization": `Bearer ${openaiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }

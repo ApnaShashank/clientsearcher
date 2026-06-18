@@ -10,7 +10,7 @@ interface SearchFormProps {
 }
 
 export default function SearchForm({ onSearchComplete }: SearchFormProps) {
-  const { searchParams, setSearchParams, executeSearch, isSearching, currentUser } = useAppStore();
+  const { searchParams, setSearchParams, executeSearch, isSearching, currentUser, filters } = useAppStore();
   const [isLiveSearch, setIsLiveSearch] = useState(false);
   const [searchError, setSearchError] = useState("");
   
@@ -106,7 +106,8 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
             customCategory: searchParams.customCategory,
             limit: searchParams.limit,
             userId: currentUser?.id || "anonymous",
-            userName: currentUser?.name || "Anonymous User"
+            userName: currentUser?.name || "Anonymous User",
+            filters: filters
           })
         });
 

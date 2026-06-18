@@ -3,7 +3,7 @@ import { serverState } from "@/lib/serverState";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, name } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: "Missing email" }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       if (!adminUser) {
         adminUser = {
           id: "admin_1",
-          name: "Localead Admin",
+          name: name || "Localead Admin",
           email: adminEmailEnv,
           role: "admin",
           plan: "Enterprise",
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       user = {
         id: `user_${Date.now()}`,
-        name: email.split("@")[0].toUpperCase(),
+        name: name || email.split("@")[0].toUpperCase(),
         email: email,
         role: "user",
         plan: "Free",

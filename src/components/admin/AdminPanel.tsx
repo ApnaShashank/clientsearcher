@@ -6,7 +6,7 @@ import { useMounted } from "@/hooks/useMounted";
 import { 
   ShieldAlert, Users, Search, DollarSign, Ban, Trash2, 
   MapPin, Tag, RefreshCw, Key, ChevronDown, ChevronUp, Check, Play, Bell,
-  UploadCloud, FileText, ClipboardList, UserCheck, Lock, ExternalLink
+  UploadCloud, FileText, ClipboardList, UserCheck, Lock, ExternalLink, X
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -89,6 +89,75 @@ export default function AdminPanel() {
   const [pdfName, setPdfName] = useState("");
   const [dispatchSuccess, setDispatchSuccess] = useState(false);
 
+  // Forwarded leads & payouts states
+  const [fwdNotes, setFwdNotes] = useState<Record<string, string>>({});
+  const [receiptScreenshots, setReceiptScreenshots] = useState<Record<string, string>>({});
+  const [notifSubTab, setNotifSubTab] = useState<"broadcast" | "logs" | "audits">("broadcast");
+  const [selectedNotifDetail, setSelectedNotifDetail] = useState<any>(null);
+
+  const handleUpdateForwardedStatus = async (leadId: string, status: string, notesText?: string) => {
+    try {
+      const res = await fetch("/api/admin/metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateForwardedLeadStatus",
+          payload: { leadId, status, notes: notesText }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMetrics((prev: any) => ({ ...prev, forwardedLeads: data.forwardedLeads || [] }));
+        alert(`Lead status updated to ${status} successfully!`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update forwarded lead status");
+    }
+  };
+
+  const handleApproveWithdrawal = async (userId: string) => {
+    const receiptUrl = receiptScreenshots[userId];
+    if (!receiptUrl) {
+      alert("Please upload/mock a payment receipt screenshot first!");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approveWithdrawal",
+          payload: { userId, paymentReceiptUrl: receiptUrl }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMetrics((prev: any) => ({ ...prev, users: data.users || [] }));
+        setReceiptScreenshots(prev => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+        alert("Withdrawal payout approved successfully!");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to approve payout");
+    }
+  };
+
+  const handleReceiptUpload = (userId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptScreenshots(prev => ({ ...prev, [userId]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Batch parsed leads preview state
   const [parsedLeadsPreview, setParsedLeadsPreview] = useState<Array<{
     businessName: string;
@@ -124,18 +193,37 @@ export default function AdminPanel() {
     }
   ];
 
-  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsParsingPdf(true);
     setPdfName(file.name);
     
-    setTimeout(() => {
-      // Parse all realistic templates from the PDF document
-      setParsedLeadsPreview([...mockPdfTemplates]);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/parse-pdf", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to parse PDF");
+      }
+
+      const data = await res.json();
+      setParsedLeadsPreview(data.leads || []);
+    } catch (err: any) {
+      console.error("PDF upload failed:", err);
+      alert(err.message || "Failed to parse PDF. Please try again or use manual input.");
+      setPdfName("");
+      setParsedLeadsPreview([]);
+    } finally {
       setIsParsingPdf(false);
-    }, 1500);
+    }
   };
 
   const handleDispatchTask = async (e: React.FormEvent) => {
@@ -185,6 +273,44 @@ export default function AdminPanel() {
     setParsedLeadsPreview(prev => prev.filter((_, i) => i !== index));
   };
 
+  const exportLogsToCSV = () => {
+    if (!metrics || !metrics.searchLogs || metrics.searchLogs.length === 0) {
+      alert("No search logs available to export.");
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Log ID,User Name,User ID,Query,City,Category,Timestamp,Results Count,Lead Business Name,Lead Phone,Lead Email,Lead Website,Lead Score\n";
+
+    metrics.searchLogs.forEach((log: any) => {
+      const escapedUserName = `"${log.userName.replace(/"/g, '""')}"`;
+      const escapedQuery = `"${log.query.replace(/"/g, '""')}"`;
+      const escapedCity = `"${log.city.replace(/"/g, '""')}"`;
+      const escapedCategory = `"${log.category.replace(/"/g, '""')}"`;
+
+      if (log.leads && log.leads.length > 0) {
+        log.leads.forEach((lead: any) => {
+          const escapedLeadName = `"${lead.businessName.replace(/"/g, '""')}"`;
+          const escapedLeadPhone = `"${(lead.phoneNumber || "").replace(/"/g, '""')}"`;
+          const escapedLeadEmail = `"${(lead.email || "").replace(/"/g, '""')}"`;
+          const escapedLeadWebsite = `"${(lead.website || "").replace(/"/g, '""')}"`;
+          
+          csvContent += `${log.id},${escapedUserName},${log.userId},${escapedQuery},${escapedCity},${escapedCategory},${log.timestamp},${log.resultsCount},${escapedLeadName},${escapedLeadPhone},${escapedLeadEmail},${escapedLeadWebsite},${lead.leadScore}\n`;
+        });
+      } else {
+        csvContent += `${log.id},${escapedUserName},${log.userId},${escapedQuery},${escapedCity},${escapedCategory},${log.timestamp},${log.resultsCount},,,,,,\n`;
+      }
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `search_logs_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getStatusStyle = (status: string) => {
     switch (status) {
       case "Pending": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
@@ -198,7 +324,7 @@ export default function AdminPanel() {
   };
 
   // Tabs
-  const [activeSubTab, setActiveSubTab] = useState<"users" | "logs" | "activities" | "keys" | "notifications" | "tasks" | "portfolio">("users");
+  const [activeSubTab, setActiveSubTab] = useState<"users" | "logs" | "activities" | "keys" | "notifications" | "tasks" | "rewards" | "portfolio">("users");
 
 
   
@@ -351,15 +477,6 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6 select-none animate-fade-in">
-      {/* Admin Panel Header */}
-      <div className="bg-[#111111] border border-[#1F1F1F] p-4 rounded-xl flex items-center gap-3">
-        <ShieldAlert className="h-5 w-5 text-rose-500" />
-        <div>
-          <h2 className="text-sm font-semibold text-text-primary">Localead Administration Dashboard</h2>
-          <p className="text-xs text-text-muted">Monitor system stats, track active sessions, verify user actions, and customize integrations</p>
-        </div>
-      </div>
-
       {/* Admin metrics grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Metric 1 */}
@@ -410,8 +527,8 @@ export default function AdminPanel() {
         {/* Metric 5 */}
         <div className="bg-card border border-border p-4 rounded-xl space-y-1 col-span-2 lg:col-span-1">
           <p className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Top Location Target</p>
-          <p className="text-xs font-bold text-text-primary truncate mt-0.5">
-            {mostSearchedCategory} ({mostSearchedCity})
+          <p className="text-sm font-extrabold text-primary truncate mt-0.5">
+            India
           </p>
         </div>
       </div>
@@ -419,18 +536,15 @@ export default function AdminPanel() {
       {/* Main Admin Section */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         {/* Tab selection */}
-        <div className="flex border-b border-border bg-card-hover/20 px-4">
+        <div className="flex border-b border-border bg-card-hover/20 px-4 overflow-x-auto scrollbar-none">
           {[
             { id: "users", label: "Users Registry" },
-            { id: "logs", label: "Search Logs & Leads details" },
-            { id: "activities", label: "System Audits" },
             { id: "keys", label: "API Configuration Overrides" },
-            { id: "notifications", label: "Broadcast Alerts & System Notifications" },
+            { id: "notifications", label: "Notifications & Audits Center" },
             { id: "tasks", label: "Task Dispatcher" },
+            { id: "rewards", label: "Commissions & Payouts" },
             { id: "portfolio", label: "Portfolio Manager" }
           ].map((tab) => (
-
-
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id as any)}
@@ -517,125 +631,7 @@ export default function AdminPanel() {
             </div>
           )}
 
-          {/* SEARCH HISTORY LOGS WITH DETAILS */}
-          {activeSubTab === "logs" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-xs text-text-muted border-b border-border/50 pb-2">
-                <span>Detailed search queries run by users and matching leads found</span>
-                <span className="font-mono">{metrics.searchLogs.length} logs</span>
-              </div>
-              
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {metrics.searchLogs.map((log: any) => {
-                  const isExpanded = expandedLogId === log.id;
-                  return (
-                    <div key={log.id} className="bg-background border border-border rounded-lg overflow-hidden transition hover:border-border">
-                      {/* Log Header Row */}
-                      <div 
-                        onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                        className="p-3.5 flex items-center justify-between text-xs cursor-pointer hover:bg-card-hover/25 transition select-none"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-text-primary">{log.userName}</span>
-                            <span className="text-text-muted font-mono text-[10px]">({log.userId})</span>
-                            <span className="text-text-muted">•</span>
-                            <span className="font-mono text-text-muted text-[10px]">{log.timestamp.replace('T', ' ').split('.')[0]}</span>
-                          </div>
-                          <p className="text-text-primary">
-                            Ran query: <strong className="text-primary">"{log.query}"</strong>
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-[10px] text-text-muted">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-primary" />
-                            {log.city}
-                          </span>
-                          <span className="bg-border px-2 py-0.5 rounded font-mono font-bold text-text-primary">
-                            {log.resultsCount} leads
-                          </span>
-                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </div>
-                      </div>
-
-                      {/* Log Leads Details Sub-Table */}
-                      {isExpanded && (
-                        <div className="border-t border-border bg-card/40 p-4 space-y-3 animate-fade-in">
-                          <h4 className="text-[10px] uppercase font-bold text-primary tracking-wider">Leads Found in this Search:</h4>
-                          {log.leads && log.leads.length > 0 ? (
-                            <div className="overflow-x-auto rounded border border-border/60">
-                              <table className="w-full text-left border-collapse text-[11px]">
-                                <thead>
-                                  <tr className="bg-background border-b border-border text-text-muted font-medium">
-                                    <th className="py-2 px-3">Lead Business Name</th>
-                                    <th className="py-2 px-3">Phone</th>
-                                    <th className="py-2 px-3">Email Address</th>
-                                    <th className="py-2 px-3">Website</th>
-                                    <th className="py-2 px-3 text-center">Score</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border/40 bg-card/20">
-                                  {log.leads.map((l: any, idx: number) => (
-                                    <tr key={idx} className="hover:bg-card-hover/20">
-                                      <td className="py-2 px-3 font-semibold text-text-primary">{l.businessName}</td>
-                                      <td className="py-2 px-3 text-text-muted font-mono">{l.phoneNumber || "None"}</td>
-                                      <td className="py-2 px-3 text-text-muted font-mono">{l.email || "None"}</td>
-                                      <td className="py-2 px-3 text-primary">
-                                        {l.website ? (
-                                          <a href={l.website} target="_blank" rel="noreferrer" className="hover:underline">
-                                            {l.website.replace("https://www.", "").replace("http://www.", "")}
-                                          </a>
-                                        ) : "None"}
-                                      </td>
-                                      <td className="py-2 px-3 text-center">
-                                        <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                                          {l.leadScore}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-text-muted italic">No leads stored in this search payload.</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* AUDIT TRAILS */}
-          {activeSubTab === "activities" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-xs text-text-muted border-b border-border/50 pb-2">
-                <span>Timeline of global actions, authentication details, and pipeline logs</span>
-                <span className="font-mono">{metrics.activities.length} audit logs</span>
-              </div>
-              
-              <div className="space-y-3.5 max-h-[400px] overflow-y-auto pr-1">
-                {metrics.activities.map((act: any) => (
-                  <div key={act.id} className="flex gap-3 text-xs leading-relaxed">
-                    <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-[0_0_8px_#38BDF8]"></div>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-text-primary">{act.leadName}</span>
-                        <span className="text-[10px] text-text-muted font-mono">
-                          {act.timestamp.replace('T', ' ').split('.')[0]}
-                        </span>
-                      </div>
-                      <p className="text-text-muted">{act.action}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* SEARCH LOGS AND AUDITS ARE CONSOLIDATED INSIDE THE NOTIFICATIONS TAB */}
 
           {/* DYNAMIC API CONFIGURATION CONFIGURATOR */}
           {activeSubTab === "keys" && (
@@ -713,147 +709,315 @@ export default function AdminPanel() {
 
           {/* SYSTEM BROADCASTS & ALERTS TAB */}
           {activeSubTab === "notifications" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in font-sans">
-              {/* Left Column: Form to Compose Alerts */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-background border border-border rounded-xl p-4.5 space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Send System Announcement</h3>
-                    <span className="text-[10px] text-text-muted font-mono">Real-time Push</span>
+            <div className="space-y-5 animate-fade-in font-sans">
+              
+              {/* Sub-tab selection menu */}
+              <div className="flex border border-border bg-card/60 p-1 rounded-xl overflow-x-auto scrollbar-none w-fit gap-1 shadow-sm">
+                {[
+                  { id: "broadcast", label: "Broadcast Alerts & Emails" },
+                  { id: "logs", label: "Search Logs Monitor" },
+                  { id: "audits", label: "System Audits Logs" }
+                ].map((sTab) => (
+                  <button
+                    key={sTab.id}
+                    onClick={() => setNotifSubTab(sTab.id as any)}
+                    className={`py-1.5 px-4 text-[10px] uppercase font-bold rounded-lg transition cursor-pointer whitespace-nowrap ${
+                      notifSubTab === sTab.id
+                        ? "bg-primary text-[#0B0B0C] shadow-md"
+                        : "text-text-muted hover:text-text-primary hover:bg-card-hover/20"
+                    }`}
+                  >
+                    {sTab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* SECTION 1: BROADCAST ALERTS */}
+              {notifSubTab === "broadcast" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left Column: Form to Compose Alerts */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="bg-background border border-border rounded-xl p-4.5 space-y-4 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                        <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Send System Announcement</h3>
+                        <span className="text-[10px] text-text-muted font-mono">Real-time Push</span>
+                      </div>
+
+                      {notifSendSuccess && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-2">
+                          <Check className="h-4 w-4 stroke-[3]" />
+                          <span>Alert broadcasted successfully!</span>
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSendNotification} className="space-y-4 text-xs">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Target Recipient</label>
+                          <select
+                            value={notifRecipient}
+                            onChange={(e) => setNotifRecipient(e.target.value)}
+                            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition cursor-pointer"
+                          >
+                            <option value="all">Broadcast to All Operators (Public)</option>
+                            {metrics.users.filter((u: any) => u.role !== "admin").map((u: any) => (
+                              <option key={u.id} value={u.id}>Direct Message: {u.name} ({u.email})</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Alert Title</label>
+                          <input
+                            type="text"
+                            required
+                            value={notifTitle}
+                            onChange={(e) => setNotifTitle(e.target.value)}
+                            placeholder="e.g. Server Maintenance Notice"
+                            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Message Alert</label>
+                          <textarea
+                            required
+                            rows={4}
+                            value={notifMessage}
+                            onChange={(e) => setNotifMessage(e.target.value)}
+                            placeholder="Type the message description to push..."
+                            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition resize-none leading-relaxed"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full btn-primary py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
+                        >
+                          <Bell className="h-3.5 w-3.5 text-[#0c0c0d]" />
+                          <span>Transmit Notification Alert</span>
+                        </button>
+                      </form>
+                    </div>
                   </div>
 
-                  {notifSendSuccess && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-2">
-                      <Check className="h-4 w-4 stroke-[3]" />
-                      <span>Alert broadcasted successfully!</span>
-                    </div>
-                  )}
+                  {/* Right Column: Alerts Monitor logs */}
+                  <div className="lg:col-span-7 space-y-5">
+                    {/* Panel 1: Sent System Alerts */}
+                    <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                        <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Broadcast History Logs</h3>
+                        <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
+                          {systemNotifications.length} logs
+                        </span>
+                      </div>
 
-                  <form onSubmit={handleSendNotification} className="space-y-4 text-xs">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Target Recipient</label>
-                      <select
-                        value={notifRecipient}
-                        onChange={(e) => setNotifRecipient(e.target.value)}
-                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition cursor-pointer"
+                      {systemNotifications.length === 0 ? (
+                        <div className="text-center py-10 text-xs text-text-muted italic select-none">
+                          No system alerts recorded yet.
+                        </div>
+                      ) : (
+                        <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+                          {systemNotifications.map((notif) => (
+                            <div 
+                              key={notif.id}
+                              onClick={() => setSelectedNotifDetail(notif)}
+                              className="bg-card border border-border/85 hover:border-primary/50 transition-all rounded-xl p-3.5 space-y-1.5 text-xs cursor-pointer"
+                              title="Click to view details in large window"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-text-primary text-[11px] truncate">{notif.title}</span>
+                                <span className="text-[9px] text-text-muted font-mono">
+                                  {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-text-muted leading-relaxed text-[10px] line-clamp-1">{notif.message}</p>
+                              <div className="flex justify-between items-center text-[9px] text-text-muted font-mono pt-1">
+                                <span>Recipient: {notif.recipientId === "all" ? "All" : notif.recipientId === "admin" ? "Admin" : notif.recipientId}</span>
+                                <span className="text-primary hover:underline">Click to view details</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Panel 2: Forwarded Leads alerts log */}
+                    <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                        <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Forwarded Leads (shashank8808108802@gmail.com)</h3>
+                        <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
+                          {(metrics.notifications || []).length} alerts
+                        </span>
+                      </div>
+
+                      {(!metrics.notifications || metrics.notifications.length === 0) ? (
+                        <div className="text-center py-10 text-xs text-text-muted italic select-none">
+                          No forwarded lead alerts received yet.
+                        </div>
+                      ) : (
+                        <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+                          {metrics.notifications.map((notif: any) => (
+                            <div 
+                              key={notif.id} 
+                              onClick={() => setSelectedNotifDetail({
+                                ...notif,
+                                title: `Lead Forwarded: ${notif.businessName}`,
+                                message: `Employee "${notif.userName}" has forwarded lead "${notif.businessName}" under the category "${notif.category}" for review.`
+                              })}
+                              className="bg-card border border-border/85 hover:border-primary/50 transition-all rounded-xl p-3.5 space-y-2 cursor-pointer"
+                              title="Click to view details in large window"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-text-primary text-[11px] truncate">{notif.businessName}</span>
+                                <span className="text-[9px] text-text-muted font-mono">
+                                  {notif.timestamp.replace('T', ' ').split('.')[0]}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[10px] text-text-muted">
+                                <div><strong className="text-text-primary">Operator:</strong> {notif.userName}</div>
+                                <div><strong className="text-text-primary">Category:</strong> {notif.category}</div>
+                              </div>
+                              <div className="text-right text-[9px] text-primary hover:underline mt-1">
+                                Click to view details
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 2: SEARCH LOGS MONITOR */}
+              {notifSubTab === "logs" && (
+                <div className="space-y-4 font-sans animate-fade-in">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs text-text-muted border-b border-border/50 pb-2">
+                    <span>Detailed search queries run by users and matching leads found</span>
+                    <div className="flex items-center gap-3 self-start sm:self-center">
+                      <button
+                        type="button"
+                        onClick={exportLogsToCSV}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-primary text-black font-bold rounded hover:bg-sky-400 transition cursor-pointer text-[10px]"
                       >
-                        <option value="all">Broadcast to All Operators (Public)</option>
-                        {metrics.users.filter((u: any) => u.role !== "admin").map((u: any) => (
-                          <option key={u.id} value={u.id}>Direct Message: {u.name} ({u.email})</option>
-                        ))}
-                      </select>
+                        Export Logs to CSV
+                      </button>
+                      <span className="font-mono">{metrics.searchLogs.length} logs</span>
                     </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Alert Title</label>
-                      <input
-                        type="text"
-                        required
-                        value={notifTitle}
-                        onChange={(e) => setNotifTitle(e.target.value)}
-                        placeholder="e.g. Server Maintenance Notice"
-                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Message Alert</label>
-                      <textarea
-                        required
-                        rows={4}
-                        value={notifMessage}
-                        onChange={(e) => setNotifMessage(e.target.value)}
-                        placeholder="Type the message description to push..."
-                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition resize-none leading-relaxed"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full btn-primary py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
-                    >
-                      <Bell className="h-3.5 w-3.5 text-[#0c0c0d]" />
-                      <span>Transmit Notification Alert</span>
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              {/* Right Column: Alerts Monitor logs */}
-              <div className="lg:col-span-7 space-y-5">
-                {/* Panel 1: Sent System Alerts */}
-                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Broadcast History Logs</h3>
-                    <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
-                      {systemNotifications.length} logs
-                    </span>
                   </div>
+                  
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                    {metrics.searchLogs.map((log: any) => {
+                      const isExpanded = expandedLogId === log.id;
+                      return (
+                        <div key={log.id} className="bg-background border border-border rounded-lg overflow-hidden transition hover:border-border">
+                          {/* Log Header Row */}
+                          <div 
+                            onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                            className="p-3.5 flex items-center justify-between text-xs cursor-pointer hover:bg-card-hover/25 transition select-none"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-text-primary">{log.userName}</span>
+                                <span className="text-text-muted font-mono text-[10px]">({log.userId})</span>
+                                <span className="text-text-muted">•</span>
+                                <span className="font-mono text-text-muted text-[10px]">{log.timestamp.replace('T', ' ').split('.')[0]}</span>
+                              </div>
+                              <p className="text-text-primary">
+                                Ran query: <strong className="text-primary">"{log.query}"</strong>
+                              </p>
+                            </div>
 
-                  {systemNotifications.length === 0 ? (
-                    <div className="text-center py-10 text-xs text-text-muted italic select-none">
-                      No system alerts recorded yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
-                      {systemNotifications.map((notif) => (
-                        <div 
-                          key={notif.id}
-                          className="bg-card border border-border/80 rounded-lg p-3 space-y-1.5 text-xs"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-text-primary text-[11px] truncate">{notif.title}</span>
-                            <span className="text-[9px] text-text-muted font-mono">
-                              {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <div className="flex items-center gap-4 text-[10px] text-text-muted">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-primary" />
+                                {log.city}
+                              </span>
+                              <span className="bg-border px-2 py-0.5 rounded font-mono font-bold text-text-primary">
+                                {log.resultsCount} leads
+                              </span>
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </div>
+                          </div>
+
+                          {/* Log Leads Details Sub-Table */}
+                          {isExpanded && (
+                            <div className="border-t border-border bg-card/40 p-4 space-y-3 animate-fade-in">
+                              <h4 className="text-[10px] uppercase font-bold text-primary tracking-wider">Leads Found in this Search:</h4>
+                              {log.leads && log.leads.length > 0 ? (
+                                <div className="overflow-x-auto rounded border border-border/60">
+                                  <table className="w-full text-left border-collapse text-[11px]">
+                                    <thead>
+                                      <tr className="bg-background border-b border-border text-text-muted font-medium">
+                                        <th className="py-2 px-3">Lead Business Name</th>
+                                        <th className="py-2 px-3">Phone</th>
+                                        <th className="py-2 px-3">Email Address</th>
+                                        <th className="py-2 px-3">Website</th>
+                                        <th className="py-2 px-3 text-center">Score</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/40 bg-card/20">
+                                      {log.leads.map((l: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-card-hover/20">
+                                          <td className="py-2 px-3 font-semibold text-text-primary">{l.businessName}</td>
+                                          <td className="py-2 px-3 text-text-muted font-mono">{l.phoneNumber || "None"}</td>
+                                          <td className="py-2 px-3 text-text-muted font-mono">{l.email || "None"}</td>
+                                          <td className="py-2 px-3 text-primary">
+                                            {l.website ? (
+                                              <a href={l.website} target="_blank" rel="noreferrer" className="hover:underline">
+                                                {l.website.replace("https://www.", "").replace("http://www.", "")}
+                                              </a>
+                                            ) : "None"}
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                                              {l.leadScore}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ) : (
+                                <p className="text-[11px] text-text-muted italic">No leads stored in this search payload.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 3: SYSTEM AUDITS LOGS */}
+              {notifSubTab === "audits" && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="flex justify-between items-center text-xs text-text-muted border-b border-border/50 pb-2">
+                    <span>Timeline of global actions, authentication details, and pipeline logs</span>
+                    <span className="font-mono">{metrics.activities.length} audit logs</span>
+                  </div>
+                  
+                  <div className="space-y-3.5 max-h-[400px] overflow-y-auto pr-1">
+                    {metrics.activities.map((act: any) => (
+                      <div key={act.id} className="flex gap-3 text-xs leading-relaxed">
+                        <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-[0_0_8px_#38BDF8]"></div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-text-primary">{act.leadName}</span>
+                            <span className="text-[10px] text-text-muted font-mono">
+                              {act.timestamp.replace('T', ' ').split('.')[0]}
                             </span>
                           </div>
-                          <p className="text-text-muted leading-relaxed text-[10px]">{notif.message}</p>
-                          <div className="flex justify-between items-center text-[9px] text-text-muted font-mono pt-1">
-                            <span>Recipient: {notif.recipientId === "all" ? "All" : notif.recipientId === "admin" ? "Admin" : notif.recipientId}</span>
-                            <span>Read: {notif.read ? "Yes" : "No"}</span>
-                          </div>
+                          <p className="text-text-muted">{act.action}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Panel 2: Forwarded Leads */}
-                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Forwarded Leads (shashank8808108802@gmail.com)</h3>
-                    <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
-                      {(metrics.notifications || []).length} alerts
-                    </span>
+                      </div>
+                    ))}
                   </div>
-
-                  {(!metrics.notifications || metrics.notifications.length === 0) ? (
-                    <div className="text-center py-10 text-xs text-text-muted italic select-none">
-                      No forwarded lead alerts received yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
-                      {metrics.notifications.map((notif: any) => (
-                        <div 
-                          key={notif.id} 
-                          className="bg-card border border-border/80 rounded-lg p-3 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-text-primary text-[11px] truncate">{notif.businessName}</span>
-                            <span className="text-[9px] text-text-muted font-mono">
-                              {notif.timestamp.replace('T', ' ').split('.')[0]}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-[10px] text-text-muted">
-                            <div><strong className="text-text-primary">Operator:</strong> {notif.userName}</div>
-                            <div><strong className="text-text-primary">Category:</strong> {notif.category}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
+
             </div>
           )}
 
@@ -1247,8 +1411,297 @@ export default function AdminPanel() {
             </div>
           )}
 
+          {/* COMMISSIONS & PAYOUTS TAB */}
+          {activeSubTab === "rewards" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in font-sans text-xs">
+              {/* Left Column: Forwarded Leads review */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">
+                      Employee Forwarded Leads (रिव्यू और स्टेटस बदलें)
+                    </h3>
+                    <span className="text-[10px] bg-border px-2.5 py-1 rounded-full text-text-primary font-bold font-mono">
+                      {metrics.forwardedLeads ? metrics.forwardedLeads.length : 0} Leads
+                    </span>
+                  </div>
+
+                  {!metrics.forwardedLeads || metrics.forwardedLeads.length === 0 ? (
+                    <div className="text-center py-16 text-xs text-text-muted italic select-none">
+                      No forwarded leads found.
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                      {metrics.forwardedLeads.map((lead: any) => {
+                        const isPendingReview = lead.status === "Under Review" || lead.status === "In Talk with Client";
+                        return (
+                          <div 
+                            key={lead.id}
+                            className={`border rounded-xl p-4 space-y-3 transition-all ${
+                              isPendingReview 
+                                ? "border-amber-500/40 bg-amber-500/[0.02] shadow-[0_0_15px_rgba(245,158,11,0.03)]" 
+                                : "border-border bg-card"
+                            }`}
+                          >
+                            {/* Header */}
+                            <div className="flex justify-between items-start gap-2 border-b border-border/40 pb-2">
+                              <div>
+                                <span className="text-[9px] uppercase font-bold tracking-wider text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/15">
+                                  {lead.category}
+                                </span>
+                                <h4 className="font-bold text-text-primary text-xs leading-snug mt-1.5">{lead.businessName}</h4>
+                                <p className="text-[10px] text-text-muted mt-0.5">
+                                  Forwarded by: <span className="text-text-primary font-semibold">{lead.forwardedByName}</span>
+                                </p>
+                              </div>
+                              
+                              <div className="flex flex-col items-end gap-1">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                  lead.status === "Approved" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                                  lead.status === "Rejected" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                                  "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                }`}>
+                                  {lead.status}
+                                </span>
+                                <span className="text-[9px] font-mono text-text-muted">
+                                  {new Date(lead.forwardedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Details */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-text-muted">
+                              <div><strong>Address:</strong> {lead.address}</div>
+                              <div><strong>Phone:</strong> {lead.phoneNumber || "N/A"}</div>
+                              {lead.website && (
+                                <div className="sm:col-span-2">
+                                  <strong>Website:</strong>{" "}
+                                  <a href={lead.website} target="_blank" rel="noreferrer" className="text-primary hover:underline font-mono">
+                                    {lead.website}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Actions and Notes Input */}
+                            <div className="bg-background/40 border border-border/50 p-3 rounded-lg space-y-3">
+                              <div className="space-y-1">
+                                <label className="text-[9px] uppercase font-bold tracking-wider text-text-muted">Admin Notes / Feedback to Operator</label>
+                                <textarea
+                                  value={fwdNotes[lead.id] !== undefined ? fwdNotes[lead.id] : (lead.notes || "")}
+                                  onChange={(e) => setFwdNotes(prev => ({ ...prev, [lead.id]: e.target.value }))}
+                                  placeholder="Enter feedback or status notes..."
+                                  rows={2}
+                                  className="w-full bg-card border border-border rounded-lg p-2 text-xs text-text-primary placeholder-text-dark focus:outline-none focus:border-primary transition resize-none"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateForwardedStatus(lead.id, "Under Review", fwdNotes[lead.id] !== undefined ? fwdNotes[lead.id] : lead.notes)}
+                                  className="px-3 py-1.5 rounded bg-background hover:bg-card-hover border border-border font-semibold text-[10px] text-text-primary cursor-pointer transition"
+                                >
+                                  Mark Under Review
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateForwardedStatus(lead.id, "In Talk with Client", fwdNotes[lead.id] !== undefined ? fwdNotes[lead.id] : lead.notes)}
+                                  className="px-3 py-1.5 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 font-semibold text-[10px] text-blue-400 cursor-pointer transition"
+                                >
+                                  Client Talk in Progress
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateForwardedStatus(lead.id, "Approved", fwdNotes[lead.id] !== undefined ? fwdNotes[lead.id] : lead.notes)}
+                                  className="px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 font-bold text-[10px] text-[#0B0B0C] cursor-pointer transition"
+                                >
+                                  Approve Client (₹500 Reward)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateForwardedStatus(lead.id, "Rejected", fwdNotes[lead.id] !== undefined ? fwdNotes[lead.id] : lead.notes)}
+                                  className="px-3 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 font-semibold text-[10px] text-rose-400 cursor-pointer transition"
+                                >
+                                  Reject Lead
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Withdrawal & Payouts registry */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">
+                      UPI Withdrawal Requests (पैसे ट्रांसफर करें)
+                    </h3>
+                  </div>
+
+                  {metrics.users.filter((u: any) => u.withdrawalStatus === "Pending" || u.withdrawalStatus === "Paid").length === 0 ? (
+                    <div className="text-center py-16 text-xs text-text-muted italic select-none">
+                      No active withdrawal requests from operators.
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                      {metrics.users
+                        .filter((u: any) => u.withdrawalStatus === "Pending" || u.withdrawalStatus === "Paid")
+                        .map((u: any) => {
+                          const isPending = u.withdrawalStatus === "Pending";
+                          return (
+                            <div key={u.id} className="border border-border bg-card rounded-xl p-4 space-y-3.5">
+                              {/* Header info */}
+                              <div className="flex items-start justify-between gap-3 border-b border-border/40 pb-2">
+                                <div>
+                                  <h4 className="font-bold text-text-primary text-xs">{u.name}</h4>
+                                  <p className="text-[10px] text-text-muted mt-0.5">{u.email}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                  isPending ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 animate-pulse" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                                }`}>
+                                  {isPending ? "Pending ₹" : "Paid ✓"}
+                                </span>
+                              </div>
+
+                              {/* QR Code display */}
+                              {isPending && u.qrCodeUrl && (
+                                <div className="space-y-1.5">
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted block">UPI QR Code:</span>
+                                  <div className="border border-border/60 rounded-lg p-2 bg-background flex flex-col items-center">
+                                    <img src={u.qrCodeUrl} alt="Operator QR Code" className="max-h-48 object-contain rounded-md" />
+                                    <span className="text-[9px] text-text-muted font-mono mt-1">Scan to make manual payment</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Manual Payout Screenshot receipt uploader */}
+                              {isPending ? (
+                                <div className="space-y-3 pt-2 border-t border-border/30">
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted block">Upload Payment Screenshot *</label>
+                                    <div className="border border-dashed border-border/80 hover:border-primary/50 transition-all rounded-lg p-3 text-center relative bg-background/50 cursor-pointer group">
+                                      <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => handleReceiptUpload(u.id, e)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                      />
+                                      {receiptScreenshots[u.id] ? (
+                                        <div className="text-emerald-400 font-bold text-[10px] truncate max-w-[200px] mx-auto">
+                                          Screenshot Attached! Click to change
+                                        </div>
+                                      ) : (
+                                        <div className="text-text-muted group-hover:text-primary transition text-[10px]">
+                                          Click to attach payment receipt image
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {receiptScreenshots[u.id] && (
+                                    <div className="border border-border/60 rounded-lg p-2 bg-background flex flex-col items-center">
+                                      <img src={receiptScreenshots[u.id]} alt="Receipt Preview" className="max-h-36 object-contain rounded-md" />
+                                    </div>
+                                  )}
+
+                                  <button
+                                    onClick={() => handleApproveWithdrawal(u.id)}
+                                    disabled={!receiptScreenshots[u.id]}
+                                    className="w-full btn-primary py-2 rounded font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                                  >
+                                    Confirm Manual Payout & Approve
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-1.5 pt-2 border-t border-border/30">
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted block">Uploaded Payment Receipt:</span>
+                                  {u.paymentReceiptUrl && (
+                                    <div className="border border-border/60 rounded-lg p-2 bg-background/50 flex flex-col items-center">
+                                      <img src={u.paymentReceiptUrl} alt="Payment Receipt" className="max-h-36 object-contain rounded-md" />
+                                    </div>
+                                  )}
+                                  <p className="text-[10px] text-text-muted italic select-none">
+                                    Payout completed manually. Receipt is visible on operator's panel.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
+
+      {/* Expanded Notification Details Modal (बड़ा नोटिफिकेशन विंडो) */}
+      {selectedNotifDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in select-none">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl relative">
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <Bell className="h-4.5 w-4.5 text-primary" />
+                <span>Notification Audit Details</span>
+              </h3>
+              <button 
+                onClick={() => setSelectedNotifDetail(null)}
+                className="text-text-muted hover:text-text-primary cursor-pointer p-1.5 rounded-lg border border-border"
+                aria-label="Close details"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs leading-relaxed">
+              <div className="bg-background/60 p-4.5 rounded-xl border border-border/80 space-y-3.5">
+                <div className="flex justify-between items-start gap-3 flex-wrap">
+                  <span className="font-extrabold text-text-primary text-sm tracking-tight">
+                    {selectedNotifDetail.title || selectedNotifDetail.businessName || "Notification Logs"}
+                  </span>
+                  <span className="text-[10px] text-text-muted font-mono font-bold bg-border/60 px-2 py-0.5 rounded">
+                    {selectedNotifDetail.timestamp ? new Date(selectedNotifDetail.timestamp).toLocaleString() : "Time N/A"}
+                  </span>
+                </div>
+
+                <div className="border-t border-border/40 pt-3 text-text-muted font-medium text-xs whitespace-pre-wrap leading-relaxed">
+                  {selectedNotifDetail.message || `Lead notification acquired:
+• Business: ${selectedNotifDetail.businessName}
+• Category: ${selectedNotifDetail.category}
+• Forwarded by: ${selectedNotifDetail.userName} (${selectedNotifDetail.userEmail})`}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center text-[10px] text-text-muted font-mono bg-card-hover/20 px-3 py-2 rounded-lg border border-border/30">
+                <span>Sender: <strong className="text-text-primary">{selectedNotifDetail.senderName || selectedNotifDetail.userName || "System"}</strong></span>
+                {selectedNotifDetail.recipientId && (
+                  <span>Recipient: <strong className="text-text-primary">{selectedNotifDetail.recipientId}</strong></span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedNotifDetail(null)}
+                className="btn-primary px-5 py-2.5 rounded-lg font-bold text-xs cursor-pointer"
+              >
+                Close details / ठीक है
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

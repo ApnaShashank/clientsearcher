@@ -87,7 +87,7 @@ export default function TaskBoard() {
             return (
               <div 
                 key={task.id}
-                className={`bg-card border rounded-xl p-4.5 flex flex-col justify-between gap-4 transition-all duration-300 relative overflow-hidden ${
+                className={`bg-card border rounded-xl p-5 flex flex-col space-y-4 hover:border-primary/50 transition-all duration-300 shadow-sm relative group ${
                   isAssignedToMe 
                     ? "border-primary/40 shadow-[0_0_15px_rgba(56,189,248,0.04)]" 
                     : isAssigned 
@@ -95,15 +95,35 @@ export default function TaskBoard() {
                     : "border-border hover:border-primary/40 hover:shadow-lg"
                 }`}
               >
-                {/* Task Header */}
-                <div className="space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-text-primary text-xs leading-tight line-clamp-1">
-                      {task.businessName}
-                    </h4>
+                {/* Header Row */}
+                <div className="flex justify-between items-start gap-2 border-b border-border/40 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/15">
+                        Admin Dispatched
+                      </span>
+                      {task.pdfUrl && (
+                        <span className="text-[9px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/15">
+                          PDF Attached
+                        </span>
+                      )}
+                    </div>
                     
+                    <h3 
+                      className="font-extrabold text-text-primary text-sm tracking-tight leading-snug mt-1.5"
+                    >
+                      {task.businessName}
+                    </h3>
+                    
+                    <p className="text-[10px] text-text-muted flex items-center gap-1.5 mt-0.5">
+                      <MapPin className="h-3 w-3 text-text-muted/80 shrink-0" />
+                      <span className="truncate max-w-[280px]">{task.address}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
                     {isAssignedToMe ? (
-                      <span className={`px-2.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider shrink-0 ${getStatusStyle(task.status)}`}>
+                      <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${getStatusStyle(task.status)}`}>
                         {task.status}
                       </span>
                     ) : isAssigned ? (
@@ -115,74 +135,89 @@ export default function TaskBoard() {
                         Open
                       </span>
                     )}
-                  </div>
 
-                  <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span>Dispatched {new Date(task.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                </div>
-
-                {/* Lead Parameters Section */}
-                <div className="space-y-2 text-xs border-y border-border/30 py-3">
-                  <div className="flex items-start gap-2 text-text-muted">
-                    <MapPin className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    <span className="line-clamp-2">{task.address}</span>
-                  </div>
-
-                  {/* Contact Number (hidden or blurred if not accepted by current user) */}
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 shrink-0 text-text-muted/70" />
                     {isAssignedToMe ? (
-                      <a href={`tel:${task.phoneNumber}`} className="text-text-primary font-mono hover:text-primary font-medium">
-                        {task.phoneNumber || "No phone listed"}
-                      </a>
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-text-primary bg-background px-1.5 py-0.5 rounded border border-border">
+                        <UserCheck className="h-2.5 w-2.5 text-primary" />
+                        <span>Me</span>
+                      </div>
+                    ) : isAssigned ? (
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-text-muted bg-background px-1.5 py-0.5 rounded border border-border">
+                        <Lock className="h-2.5 w-2.5 text-text-dark" />
+                        <span>{task.acceptedByName}</span>
+                      </div>
                     ) : (
-                      <span className="text-text-dark font-mono blur-[3px] select-none">
-                        +91 99999 88888
-                      </span>
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
+                        <span>Open</span>
+                      </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Map Link */}
-                  {task.googleMapsUrl && (
-                    <div className="pt-0.5">
-                      {isAssignedToMe ? (
+                {/* Direct Contacts Links Bar */}
+                <div className="flex items-center gap-2 text-xs">
+                  {isAssignedToMe ? (
+                    <>
+                      {task.phoneNumber && (
                         <a 
-                          href={task.googleMapsUrl} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1 font-bold text-[10px]"
+                          href={`tel:${task.phoneNumber}`}
+                          className="flex items-center gap-1 hover:text-text-primary transition font-mono text-[10px] text-text-muted bg-card hover:bg-card-hover border border-border px-2.5 py-1.5 rounded-lg"
                         >
-                          <span>Open in Google Maps</span>
-                          <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                          <Phone className="h-3 w-3 text-primary shrink-0" />
+                          <span>Call</span>
                         </a>
-                      ) : (
-                        <span className="text-text-dark font-bold text-[10px] cursor-not-allowed">
-                          Maps Link Locked
-                        </span>
                       )}
-                    </div>
-                  )}
+                      
+                      {task.phoneNumber && (
+                        <a 
+                          href={`https://wa.me/${task.phoneNumber.replace(/[^0-9]/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 hover:text-emerald-400 transition font-mono text-[10px] text-text-muted bg-card hover:bg-card-hover border border-border px-2.5 py-1.5 rounded-lg"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 shrink-0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
 
-                  {/* PDF Download Indicator */}
-                  {task.pdfUrl && (
-                    <div className="text-[10px] font-mono text-emerald-400/80 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/10 w-fit">
-                      Attached Resource PDF
+                      {task.googleMapsUrl && (
+                        <a 
+                          href={task.googleMapsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 hover:text-primary transition text-[10px] text-text-muted bg-card hover:bg-card-hover border border-border px-2.5 py-1.5 rounded-lg"
+                        >
+                          <ExternalLink className="h-3 w-3 text-primary shrink-0" />
+                          <span>Maps</span>
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[10px] text-text-dark select-none bg-background/30 border border-border/20 px-2 py-1 rounded-lg">
+                      <Lock className="h-3.5 w-3.5" />
+                      <span>Accept task to unlock contact & maps details</span>
                     </div>
                   )}
                 </div>
 
-                {/* Actions Footer */}
-                <div className="pt-1.5 space-y-3">
+                {/* Actions and Status Section */}
+                <div className="pt-2 border-t border-border/30">
                   {isAssignedToMe ? (
-                    <>
-                      <div className="space-y-2">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-text-muted">Update Progress Status</label>
+                    <div className="space-y-4">
+                      {/* Status select dropdown */}
+                      <div className="space-y-1.5 bg-background/30 border border-border/40 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <label className="text-[9px] uppercase font-bold tracking-wider text-text-muted">Task Status</label>
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            <span className="text-[11px] font-semibold text-text-primary">{task.status}</span>
+                          </div>
+                        </div>
+
                         <select
                           value={task.status}
                           onChange={(e) => updateTaskStatus(task.id, e.target.value as any)}
-                          className={`w-full rounded-lg border px-3 py-2 text-xs font-bold focus:outline-none focus:ring-0 ${getStatusStyle(task.status)} bg-card cursor-pointer`}
+                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg focus:outline-none cursor-pointer text-left w-full sm:w-44 ${getStatusStyle(task.status)}`}
                         >
                           <option value="Pending" className="bg-card text-zinc-500">Pending</option>
                           <option value="Contacted" className="bg-card text-blue-500">Contacted</option>
@@ -193,8 +228,11 @@ export default function TaskBoard() {
                         </select>
                       </div>
 
-                      <div className="space-y-1.5 pt-2 border-t border-border/30">
-                        <label className="text-[9px] uppercase font-bold tracking-wider text-text-muted">Outreach Notes</label>
+                      {/* Notes textarea */}
+                      <div className="space-y-3 bg-background/50 border border-border/55 p-3 rounded-xl">
+                        <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-text-muted/95 tracking-wide">
+                          Task Outreach Notes
+                        </span>
                         <textarea
                           defaultValue={task.notes || ""}
                           onBlur={(e) => {
@@ -202,24 +240,27 @@ export default function TaskBoard() {
                               updateTaskNotes(task.id, e.target.value);
                             }
                           }}
-                          placeholder="Outreach notes... (Auto-saves on blur)"
-                          rows={2}
-                          className="w-full bg-[#111112] border border-[#1f1f21] rounded-lg p-2 text-xs text-text-primary placeholder-text-dark focus:outline-none focus:border-primary transition resize-none leading-relaxed"
+                          placeholder="Log outreach discussions, meeting details, client responses..."
+                          rows={3}
+                          className="w-full bg-card border border-border rounded-lg px-2.5 py-2 text-xs text-text-primary placeholder-text-dark focus:outline-none focus:border-primary transition leading-relaxed resize-none"
                         />
+                        <div className="text-right text-[9px] text-text-dark">
+                          * Note saves automatically when you click outside the box
+                        </div>
                       </div>
-                    </>
+                    </div>
                   ) : isAssigned ? (
-                    <div className="bg-[#1a1311] border border-amber-500/10 text-amber-500/85 p-2 rounded-lg text-[10px] font-semibold flex items-center gap-2">
-                      <Lock className="h-3.5 w-3.5 shrink-0" />
-                      <span>Assigned to {task.acceptedByName}</span>
+                    <div className="bg-[#1a1311] border border-amber-500/10 text-amber-500/85 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
+                      <Lock className="h-4 w-4 shrink-0" />
+                      <span>This task is locked. Assigned to operator {task.acceptedByName}.</span>
                     </div>
                   ) : (
                     <button
                       type="button"
                       onClick={() => acceptTask(task.id)}
-                      className="w-full bg-primary hover:bg-sky-400 text-[#0c0c0d] py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition duration-300 cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
+                      className="w-full bg-primary hover:bg-sky-400 text-[#0c0c0d] py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition duration-300 cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
                     >
-                      <UserCheck className="h-3.5 w-3.5" />
+                      <UserCheck className="h-4 w-4" />
                       <span>Accept Task Assignment</span>
                     </button>
                   )}

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { 
-  Lead, SavedLeadDetails, Campaign, Activity, SearchLog, User, SearchFilters, OutreachStatus 
+  Lead, SavedLeadDetails, Campaign, Activity, SearchLog, User, SearchFilters, OutreachStatus, AdminTask, SystemNotification, PortfolioWebsite 
 } from "@/types/lead";
 import { generateMockLeads } from "@/lib/mockLeads";
 
@@ -17,6 +17,10 @@ interface AppState {
   activities: Activity[];
   searchLogs: SearchLog[];
   onlineUsers: number;
+  adminTasks: AdminTask[];
+  systemNotifications: SystemNotification[];
+  portfolioWebsites: PortfolioWebsite[];
+
   
   // Search parameters
   searchParams: {
@@ -66,7 +70,27 @@ interface AppState {
   // Theme Toggle
   theme: "dark" | "light";
   toggleTheme: () => void;
+ 
+  // Actions - Admin Tasks
+  fetchTasks: () => Promise<void>;
+  createTask: (businessName: string, phoneNumber: string, googleMapsUrl: string, address: string, pdfUrl?: string) => Promise<any>;
+  acceptTask: (taskId: string) => Promise<any>;
+  updateTaskStatus: (taskId: string, status: AdminTask["status"]) => Promise<any>;
+  updateTaskNotes: (taskId: string, notes: string) => Promise<any>;
+
+  // Actions - System Notifications
+  fetchNotifications: () => Promise<void>;
+  sendSystemNotification: (recipientId: string, title: string, message: string) => Promise<void>;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  updateCurrentUser: (name: string, password?: string) => Promise<void>;
+
+  // Actions - Portfolio
+  fetchPortfolio: () => Promise<void>;
+  addPortfolioWebsite: (name: string, url: string, businessType: string, address: string, type: "demo" | "client") => Promise<any>;
+  deletePortfolioWebsite: (id: string) => Promise<void>;
 }
+
 
 const initialFilters: SearchFilters = {
   onlyVerified: false,
@@ -206,7 +230,11 @@ export const useAppStore = create<AppState>()(
         }
       ],
       onlineUsers: 1,
+      adminTasks: [],
+      systemNotifications: [],
+      portfolioWebsites: [],
       theme: "dark",
+
       toggleTheme: () => {
         const nextTheme = get().theme === "dark" ? "light" : "dark";
         set({ theme: nextTheme });
@@ -577,7 +605,322 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      fetchTasks: async () => {
+        try {
+          const res = await fetch("/api/tasks");
+          if (res.ok) {
+            const data = await res.json();
+            set({ adminTasks: data.tasks || [] });
+          }
+        } catch (err) {
+          console.error("Failed to fetch admin tasks:", err);
+        }
+      },
+
+      createTask: async (businessName, phoneNumber, googleMapsUrl, address, pdfUrl = "") => {
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "create",
+              payload: { businessName, phoneNumber, googleMapsUrl, address, pdfUrl }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to create task");
+          }
+          const data = await res.json();
+          await get().fetchTasks();
+          return data.task;
+        } catch (err: any) {
+          alert(err.message || "Failed to dispatch task");
+          throw err;
+        }
+      },
+
+      acceptTask: async (taskId) => {
+        try {
+          const user = get().currentUser;
+          if (!user) {
+            alert("Please login first to accept tasks!");
+            return;
+          }
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "accept",
+              payload: {
+                taskId,
+                userId: user.id,
+                userName: user.name
+              }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to accept task");
+          }
+          const data = await res.json();
+          await get().fetchTasks();
+          alert("Task successfully accepted! You are now assigned to this lead.");
+          return data.task;
+        } catch (err: any) {
+          alert(err.message || "Failed to accept task");
+          throw err;
+        }
+      },
+
+      updateTaskStatus: async (taskId, status) => {
+        try {
+          const user = get().currentUser;
+          if (!user) return;
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "updateStatus",
+              payload: {
+                taskId,
+                userId: user.id,
+                status
+              }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to update task status");
+          }
+          const data = await res.json();
+          await get().fetchTasks();
+          return data.task;
+        } catch (err: any) {
+          alert(err.message || "Failed to update task progress");
+          throw err;
+        }
+      },
+
+      updateTaskNotes: async (taskId, notes) => {
+        try {
+          const user = get().currentUser;
+          if (!user) return;
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "updateNotes",
+              payload: {
+                taskId,
+                userId: user.id,
+                notes
+              }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to update task notes");
+          }
+          const data = await res.json();
+          await get().fetchTasks();
+          return data.task;
+        } catch (err: any) {
+          alert(err.message || "Failed to update task notes");
+          throw err;
+        }
+      },
+
+      fetchNotifications: async () => {
+        try {
+          const user = get().currentUser;
+          if (!user) return;
+          const res = await fetch(`/api/notifications?userId=${user.id}&role=${user.role}`);
+          if (res.ok) {
+            const data = await res.json();
+            set({ systemNotifications: data.notifications || [] });
+          }
+        } catch (err) {
+          console.error("Failed to fetch notifications:", err);
+        }
+      },
+
+      sendSystemNotification: async (recipientId, title, message) => {
+        try {
+          const user = get().currentUser;
+          if (!user) return;
+          const res = await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "send",
+              payload: {
+                recipientId,
+                title,
+                message,
+                senderName: user.name
+              }
+            })
+          });
+          if (res.ok) {
+            await get().fetchNotifications();
+          }
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
+      },
+
+      markNotificationRead: async (notificationId) => {
+        try {
+          const res = await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "markRead",
+              payload: { notificationId }
+            })
+          });
+          if (res.ok) {
+            await get().fetchNotifications();
+          }
+        } catch (err) {
+          console.error("Failed to mark notification read:", err);
+        }
+      },
+
+      markAllNotificationsRead: async () => {
+        try {
+          const user = get().currentUser;
+          if (!user) return;
+          const res = await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "markAllRead",
+              payload: { recipientId: user.role === "admin" ? "admin" : user.id }
+            })
+          });
+          if (res.ok) {
+            await get().fetchNotifications();
+          }
+        } catch (err) {
+          console.error("Failed to mark all notifications read:", err);
+        }
+      },
+
+      updateCurrentUser: async (name, password) => {
+        const user = get().currentUser;
+        if (!user) return;
+
+        const oldName = user.name;
+        const passwordUpdated = !!password;
+        
+        set(state => ({
+          currentUser: { 
+            ...state.currentUser!, 
+            name,
+            ...(passwordUpdated ? { password } : {})
+          },
+          users: state.users.map(u => u.id === user.id ? { ...u, name, ...(passwordUpdated ? { password } : {}) } : u)
+        }));
+
+        try {
+          let detailMessage = `User details updated. Old Name: "${oldName}", New Name: "${name}". Email: ${user.email}.`;
+          if (passwordUpdated) {
+            detailMessage += " Password was also changed.";
+          }
+
+          // 1. Send notification alert to admin
+          await fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "send",
+              payload: {
+                recipientId: "admin",
+                title: "User Profile Changed",
+                message: detailMessage,
+                senderName: name
+              }
+            })
+          });
+
+          // 2. Sync profile update to server-wide state
+          await fetch("/api/admin/metrics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "updateUserProfile",
+              payload: {
+                userId: user.id,
+                name,
+                password: password || undefined
+              }
+            })
+          });
+        } catch (err) {
+          console.error("Failed to notify admin of details change:", err);
+        }
+      },
+
+      fetchPortfolio: async () => {
+        try {
+          const res = await fetch("/api/portfolio");
+          if (res.ok) {
+            const data = await res.json();
+            set({ portfolioWebsites: data.portfolio || [] });
+          }
+        } catch (err) {
+          console.error("Failed to fetch portfolio:", err);
+        }
+      },
+
+      addPortfolioWebsite: async (name, url, businessType, address, type) => {
+        try {
+          const res = await fetch("/api/portfolio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "add",
+              payload: { name, url, businessType, address, type }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to add portfolio website");
+          }
+          const data = await res.json();
+          await get().fetchPortfolio();
+          return data.website;
+        } catch (err: any) {
+          alert(err.message || "Failed to add portfolio website");
+          throw err;
+        }
+      },
+
+      deletePortfolioWebsite: async (id) => {
+        try {
+          const res = await fetch("/api/portfolio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "delete",
+              payload: { id }
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Failed to delete portfolio website");
+          }
+          await get().fetchPortfolio();
+        } catch (err: any) {
+          alert(err.message || "Failed to delete website");
+          throw err;
+        }
+      },
+
       addActivity: (leadId, leadName, action) => {
+
         const newAct: Activity = {
           id: `act_${Date.now()}`,
           leadId,

@@ -1,23 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { X, Mail, Lock, Shield, Eye, EyeOff } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultRegister?: boolean;
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, defaultRegister = false }: AuthModalProps) {
   const { login, register } = useAppStore();
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(defaultRegister);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsRegister(defaultRegister);
+      setError("");
+      setEmail("");
+      setPassword("");
+      setName("");
+    }
+  }, [isOpen, defaultRegister]);
 
   if (!isOpen) return null;
 

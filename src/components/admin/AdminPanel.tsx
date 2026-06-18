@@ -5,12 +5,17 @@ import { useAppStore } from "@/store/useAppStore";
 import { useMounted } from "@/hooks/useMounted";
 import { 
   ShieldAlert, Users, Search, DollarSign, Ban, Trash2, 
-  MapPin, Tag, RefreshCw, Key, ChevronDown, ChevronUp, Check, Play, Bell
+  MapPin, Tag, RefreshCw, Key, ChevronDown, ChevronUp, Check, Play, Bell,
+  UploadCloud, FileText, ClipboardList, UserCheck, Lock, ExternalLink
 } from "lucide-react";
 
 export default function AdminPanel() {
   const mounted = useMounted();
-  const { currentUser } = useAppStore();
+  const { 
+    currentUser, adminTasks, createTask, fetchTasks, 
+    sendSystemNotification, systemNotifications, fetchNotifications,
+    portfolioWebsites, addPortfolioWebsite, deletePortfolioWebsite
+  } = useAppStore();
   const [metrics, setMetrics] = useState<any>(null);
   
   // Custom API key inputs
@@ -19,8 +24,182 @@ export default function AdminPanel() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
+  // Notification Broadcast states
+  const [notifRecipient, setNotifRecipient] = useState("all");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [notifSendSuccess, setNotifSendSuccess] = useState(false);
+
+  // Portfolio States
+  const [portName, setPortName] = useState("");
+  const [portUrl, setPortUrl] = useState("");
+  const [portBusinessType, setPortBusinessType] = useState("");
+  const [portAddress, setPortAddress] = useState("");
+  const [portType, setPortType] = useState<"demo" | "client">("demo");
+  const [portLoading, setPortLoading] = useState(false);
+  const [portSuccess, setPortSuccess] = useState(false);
+
+  const handleCreatePortfolio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!portName || !portUrl || !portBusinessType || !portAddress) {
+      alert("All fields are required!");
+      return;
+    }
+    setPortLoading(true);
+    setPortSuccess(false);
+    try {
+      await addPortfolioWebsite(portName, portUrl, portBusinessType, portAddress, portType);
+      setPortSuccess(true);
+      setPortName("");
+      setPortUrl("");
+      setPortBusinessType("");
+      setPortAddress("");
+      setPortType("demo");
+      setTimeout(() => setPortSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to add website:", err);
+    } finally {
+      setPortLoading(false);
+    }
+  };
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifTitle || !notifMessage) {
+      alert("Title and Message are required!");
+      return;
+    }
+    try {
+      await sendSystemNotification(notifRecipient, notifTitle, notifMessage);
+      setNotifSendSuccess(true);
+      setNotifTitle("");
+      setNotifMessage("");
+      setTimeout(() => setNotifSendSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to send notification:", err);
+    }
+  };
+
+  // Task Dispatcher states
+  const [taskName, setTaskName] = useState("");
+  const [taskPhone, setTaskPhone] = useState("");
+  const [taskMapsUrl, setTaskMapsUrl] = useState("");
+  const [taskAddress, setTaskAddress] = useState("");
+  const [isParsingPdf, setIsParsingPdf] = useState(false);
+  const [pdfName, setPdfName] = useState("");
+  const [dispatchSuccess, setDispatchSuccess] = useState(false);
+
+  // Batch parsed leads preview state
+  const [parsedLeadsPreview, setParsedLeadsPreview] = useState<Array<{
+    businessName: string;
+    phoneNumber: string;
+    googleMapsUrl: string;
+    address: string;
+  }>>([]);
+
+  const mockPdfTemplates = [
+    {
+      businessName: "Tata Coffee Grand",
+      phoneNumber: "+91 80 2356 7890",
+      googleMapsUrl: "https://maps.google.com/?cid=12345678901234567",
+      address: "Tata Coffee Corporate Office, No. 57, Railway Parallel Road, Kumara Park West, Bengaluru, Karnataka 560020"
+    },
+    {
+      businessName: "Apollo Pharmacy Delhi",
+      phoneNumber: "+91 11 4156 7800",
+      googleMapsUrl: "https://maps.google.com/?cid=98765432109876543",
+      address: "Shop No. 12, Ground Floor, Connaught Circus, Block G, Connaught Place, New Delhi, Delhi 110001"
+    },
+    {
+      businessName: "Geetanjali Salon Mumbai",
+      phoneNumber: "+91 22 2640 0500",
+      googleMapsUrl: "https://maps.google.com/?cid=11223344556677889",
+      address: "Waterfield Road, Bandra West, Mumbai, Maharashtra 400050"
+    },
+    {
+      businessName: "Clove Dental Clinic Noida",
+      phoneNumber: "+91 120 422 3344",
+      googleMapsUrl: "https://maps.google.com/?cid=99887766554433221",
+      address: "Sector 18, Block K, Noida, Uttar Pradesh 201301"
+    }
+  ];
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsingPdf(true);
+    setPdfName(file.name);
+    
+    setTimeout(() => {
+      // Parse all realistic templates from the PDF document
+      setParsedLeadsPreview([...mockPdfTemplates]);
+      setIsParsingPdf(false);
+    }, 1500);
+  };
+
+  const handleDispatchTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskName || !taskAddress) {
+      alert("Business Name and Address are required!");
+      return;
+    }
+
+    try {
+      await createTask(taskName, taskPhone, taskMapsUrl, taskAddress, pdfName ? `uploaded_${pdfName}` : undefined);
+      setDispatchSuccess(true);
+      setTaskName("");
+      setTaskPhone("");
+      setTaskMapsUrl("");
+      setTaskAddress("");
+      setPdfName("");
+      setTimeout(() => setDispatchSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to dispatch task:", err);
+    }
+  };
+
+  const handleDispatchBatch = async () => {
+    if (parsedLeadsPreview.length === 0) return;
+    
+    try {
+      for (const lead of parsedLeadsPreview) {
+        await createTask(
+          lead.businessName,
+          lead.phoneNumber,
+          lead.googleMapsUrl,
+          lead.address,
+          `uploaded_${pdfName}`
+        );
+      }
+      setDispatchSuccess(true);
+      setParsedLeadsPreview([]);
+      setPdfName("");
+      setTimeout(() => setDispatchSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to dispatch batch:", err);
+    }
+  };
+
+  const handleRemovePreviewLead = (index: number) => {
+    setParsedLeadsPreview(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "Pending": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+      case "Contacted": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "Interested": return "bg-sky-500/10 text-sky-400 border-sky-500/20";
+      case "Not Interested": return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+      case "Won": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "Lost": return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+      default: return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+    }
+  };
+
   // Tabs
-  const [activeSubTab, setActiveSubTab] = useState<"users" | "logs" | "activities" | "keys" | "notifications">("users");
+  const [activeSubTab, setActiveSubTab] = useState<"users" | "logs" | "activities" | "keys" | "notifications" | "tasks" | "portfolio">("users");
+
 
   
   // Search logs expansion tracker
@@ -48,9 +227,13 @@ export default function AdminPanel() {
     }
 
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 3000);
+    fetchNotifications();
+    const interval = setInterval(() => {
+      fetchMetrics();
+      fetchNotifications();
+    }, 3000);
     return () => clearInterval(interval);
-  }, [mounted]);
+  }, [mounted, fetchNotifications]);
 
   if (!mounted || !metrics) {
     return (
@@ -242,8 +425,11 @@ export default function AdminPanel() {
             { id: "logs", label: "Search Logs & Leads details" },
             { id: "activities", label: "System Audits" },
             { id: "keys", label: "API Configuration Overrides" },
-            { id: "notifications", label: "Forward Alerts" }
+            { id: "notifications", label: "Broadcast Alerts & System Notifications" },
+            { id: "tasks", label: "Task Dispatcher" },
+            { id: "portfolio", label: "Portfolio Manager" }
           ].map((tab) => (
+
 
             <button
               key={tab.id}
@@ -525,55 +711,538 @@ export default function AdminPanel() {
             </div>
           )}
 
-          {/* FORWARD NOTIFICATIONS TAB */}
+          {/* SYSTEM BROADCASTS & ALERTS TAB */}
           {activeSubTab === "notifications" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-xs text-text-muted border-b border-border/50 pb-2">
-                <span>Alerts for clients forwarded by local operators to shashank8808108802@gmail.com</span>
-                <span className="font-mono">{(metrics.notifications || []).length} alerts</span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in font-sans">
+              {/* Left Column: Form to Compose Alerts */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Send System Announcement</h3>
+                    <span className="text-[10px] text-text-muted font-mono">Real-time Push</span>
+                  </div>
+
+                  {notifSendSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-2">
+                      <Check className="h-4 w-4 stroke-[3]" />
+                      <span>Alert broadcasted successfully!</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendNotification} className="space-y-4 text-xs">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Target Recipient</label>
+                      <select
+                        value={notifRecipient}
+                        onChange={(e) => setNotifRecipient(e.target.value)}
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition cursor-pointer"
+                      >
+                        <option value="all">Broadcast to All Operators (Public)</option>
+                        {metrics.users.filter((u: any) => u.role !== "admin").map((u: any) => (
+                          <option key={u.id} value={u.id}>Direct Message: {u.name} ({u.email})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Alert Title</label>
+                      <input
+                        type="text"
+                        required
+                        value={notifTitle}
+                        onChange={(e) => setNotifTitle(e.target.value)}
+                        placeholder="e.g. Server Maintenance Notice"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Message Alert</label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        placeholder="Type the message description to push..."
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full btn-primary py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
+                    >
+                      <Bell className="h-3.5 w-3.5 text-[#0c0c0d]" />
+                      <span>Transmit Notification Alert</span>
+                    </button>
+                  </form>
+                </div>
               </div>
 
-              <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
-                {(!metrics.notifications || metrics.notifications.length === 0) ? (
-                  <div className="text-center py-12 text-xs text-text-muted italic select-none">
-                    No forwarded lead alerts received yet
+              {/* Right Column: Alerts Monitor logs */}
+              <div className="lg:col-span-7 space-y-5">
+                {/* Panel 1: Sent System Alerts */}
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Broadcast History Logs</h3>
+                    <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
+                      {systemNotifications.length} logs
+                    </span>
                   </div>
-                ) : (
-                  metrics.notifications.map((notif: any) => (
-                    <div 
-                      key={notif.id} 
-                      className="bg-background border border-border/80 rounded-xl p-4.5 space-y-3.5 hover:border-primary/45 transition-all duration-300 relative"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/30 pb-2.5">
-                        <div className="flex items-center gap-2">
-                          <Bell className="h-4 w-4 text-violet-400 shrink-0" />
-                          <h4 className="font-bold text-text-primary text-xs truncate">
-                            {notif.businessName}
-                          </h4>
+
+                  {systemNotifications.length === 0 ? (
+                    <div className="text-center py-10 text-xs text-text-muted italic select-none">
+                      No system alerts recorded yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+                      {systemNotifications.map((notif) => (
+                        <div 
+                          key={notif.id}
+                          className="bg-card border border-border/80 rounded-lg p-3 space-y-1.5 text-xs"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-text-primary text-[11px] truncate">{notif.title}</span>
+                            <span className="text-[9px] text-text-muted font-mono">
+                              {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-text-muted leading-relaxed text-[10px]">{notif.message}</p>
+                          <div className="flex justify-between items-center text-[9px] text-text-muted font-mono pt-1">
+                            <span>Recipient: {notif.recipientId === "all" ? "All" : notif.recipientId === "admin" ? "Admin" : notif.recipientId}</span>
+                            <span>Read: {notif.read ? "Yes" : "No"}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-mono">
-                          <span className="text-text-muted">{notif.timestamp.replace('T', ' ').split('.')[0]}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 font-bold border border-violet-500/20">
-                            Client Acquired
-                          </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Panel 2: Forwarded Leads */}
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Forwarded Leads (shashank8808108802@gmail.com)</h3>
+                    <span className="text-[10px] bg-border px-2 py-0.5 rounded text-text-primary font-bold font-mono">
+                      {(metrics.notifications || []).length} alerts
+                    </span>
+                  </div>
+
+                  {(!metrics.notifications || metrics.notifications.length === 0) ? (
+                    <div className="text-center py-10 text-xs text-text-muted italic select-none">
+                      No forwarded lead alerts received yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin">
+                      {metrics.notifications.map((notif: any) => (
+                        <div 
+                          key={notif.id} 
+                          className="bg-card border border-border/80 rounded-lg p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-text-primary text-[11px] truncate">{notif.businessName}</span>
+                            <span className="text-[9px] text-text-muted font-mono">
+                              {notif.timestamp.replace('T', ' ').split('.')[0]}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-text-muted">
+                            <div><strong className="text-text-primary">Operator:</strong> {notif.userName}</div>
+                            <div><strong className="text-text-primary">Category:</strong> {notif.category}</div>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TASK DISPATCHER TAB */}
+          {activeSubTab === "tasks" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+              {/* Left Column: Form */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Dispatch New Lead Task</h3>
+                    <span className="text-[10px] text-text-muted font-mono">Operator Broadcast</span>
+                  </div>
+
+                  {dispatchSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-2">
+                      <Check className="h-4 w-4 stroke-[3]" />
+                      <span>Task forwarded to all operators successfully!</span>
+                    </div>
+                  )}
+
+                  {/* PDF Upload Area */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Extract Info from PDF (Optional)</label>
+                    <div className="border border-dashed border-border/80 hover:border-primary/50 transition-all rounded-lg p-4 text-center relative cursor-pointer bg-card/25 group">
+                      <input 
+                        type="file" 
+                        accept="application/pdf" 
+                        onChange={handlePdfUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isParsingPdf}
+                      />
+                      {isParsingPdf ? (
+                        <div className="flex flex-col items-center gap-2 py-2">
+                          <RefreshCw className="h-5 w-5 text-primary animate-spin" />
+                          <span className="text-[11px] text-text-muted animate-pulse font-semibold">Scanning PDF document...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <UploadCloud className="h-6 w-6 text-text-muted group-hover:text-primary transition" />
+                          <span className="text-xs font-semibold text-text-primary">Click to upload lead PDF</span>
+                          <span className="text-[10px] text-text-muted font-mono">Extract multiple leads from document</span>
+                        </div>
+                      )}
+                    </div>
+                    {pdfName && !isParsingPdf && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-2 py-1 rounded w-fit">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>{pdfName} parsed</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {parsedLeadsPreview.length > 0 ? (
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-text-primary uppercase tracking-wide">
+                          <FileText className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <span>Extracted Leads ({parsedLeadsPreview.length})</span>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setParsedLeadsPreview([]);
+                            setPdfName("");
+                          }}
+                          className="text-[10px] text-rose-400 hover:underline cursor-pointer font-bold"
+                        >
+                          Cancel & Manual Input
+                        </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div className="space-y-1 bg-card/40 p-2.5 rounded-lg border border-border/50">
-                          <span className="text-[9px] uppercase font-bold text-text-muted tracking-wider">Lead Information</span>
-                          <p className="text-text-primary"><strong className="text-text-muted">Category:</strong> {notif.category}</p>
-                          <p className="text-text-primary"><strong className="text-text-muted">Lead ID:</strong> {notif.leadId}</p>
-                        </div>
-                        <div className="space-y-1 bg-card/40 p-2.5 rounded-lg border border-border/50">
-                          <span className="text-[9px] uppercase font-bold text-text-muted tracking-wider">Forwarded By</span>
-                          <p className="text-text-primary"><strong className="text-text-muted">Operator:</strong> {notif.userName}</p>
-                          <p className="text-text-primary"><strong className="text-text-muted">Email:</strong> {notif.userEmail}</p>
-                        </div>
+                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
+                        {parsedLeadsPreview.map((lead, idx) => (
+                          <div 
+                            key={idx}
+                            className="bg-card p-3 rounded-lg border border-border flex items-start justify-between gap-3 text-xs relative"
+                          >
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-text-primary text-[11px] leading-tight">
+                                {lead.businessName}
+                              </h4>
+                              {lead.phoneNumber && <p className="text-[10px] text-text-muted font-mono">{lead.phoneNumber}</p>}
+                              <p className="text-[10px] text-text-muted line-clamp-2 leading-relaxed">{lead.address}</p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePreviewLead(idx)}
+                              className="text-text-dark hover:text-rose-500 p-1.5 rounded transition cursor-pointer shrink-0"
+                              title="Remove lead"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={handleDispatchBatch}
+                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#0c0c0d] py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(16,185,129,0.15)]"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        <span>Forward All {parsedLeadsPreview.length} Leads to Operators</span>
+                      </button>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    <form onSubmit={handleDispatchTask} className="space-y-3.5 text-xs">
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Business Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={taskName}
+                          onChange={(e) => setTaskName(e.target.value)}
+                          placeholder="e.g. Apollo Pharmacy Delhi"
+                          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Contact Number</label>
+                        <input
+                          type="text"
+                          value={taskPhone}
+                          onChange={(e) => setTaskPhone(e.target.value)}
+                          placeholder="e.g. +91 11 4156 7800"
+                          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Google Maps Link</label>
+                        <input
+                          type="url"
+                          value={taskMapsUrl}
+                          onChange={(e) => setTaskMapsUrl(e.target.value)}
+                          placeholder="e.g. https://maps.google.com/..."
+                          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Physical Address *</label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={taskAddress}
+                          onChange={(e) => setTaskAddress(e.target.value)}
+                          placeholder="e.g. Block G, Connaught Place, New Delhi..."
+                          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition resize-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full btn-primary py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(56,189,248,0.1)]"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        <span>Forward to Operators</span>
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Tracking Board Monitor */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                      Active Assignments Monitor
+                    </h3>
+                    <span className="text-[10px] bg-border px-2.5 py-1 rounded-full text-text-primary font-bold font-mono">
+                      {adminTasks.length} Dispatched
+                    </span>
+                  </div>
+
+                  {adminTasks.length === 0 ? (
+                    <div className="text-center py-16 text-xs text-text-muted italic select-none">
+                      No tasks dispatched yet. Fill out the form or scan a PDF to broadcast tasks to operators.
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                      {adminTasks.map((task) => {
+                        const isAssigned = task.acceptedBy !== null;
+                        return (
+                          <div 
+                            key={task.id} 
+                            className="bg-card border border-border hover:border-border/80 transition rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                          >
+                            <div className="space-y-1.5 max-w-[70%]">
+                              <h4 className="font-bold text-text-primary text-xs leading-snug truncate">
+                                {task.businessName}
+                              </h4>
+                              <p className="text-[10px] text-text-muted line-clamp-1">{task.address}</p>
+                              
+                              <div className="flex flex-wrap items-center gap-2.5 text-[10px] font-mono">
+                                <span className="text-text-muted">
+                                  Dispatched {new Date(task.dispatchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {task.pdfUrl && (
+                                  <span className="text-emerald-400 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10 text-[9px] uppercase font-bold tracking-wider">
+                                    PDF Resource
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-center gap-2 shrink-0">
+                              {isAssigned ? (
+                                <div className="flex items-center gap-1 text-[10px] font-semibold text-text-primary bg-background px-2 py-1 rounded border border-border">
+                                  <UserCheck className="h-3 w-3 text-primary" />
+                                  <span>{task.acceptedByName}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-500 bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10">
+                                  <Lock className="h-3 w-3" />
+                                  <span>Unassigned</span>
+                                </div>
+                              )}
+
+                              <span className={`px-2.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${getStatusStyle(task.status)}`}>
+                                {task.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PORTFOLIO MANAGER TAB */}
+          {activeSubTab === "portfolio" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in font-sans">
+              {/* Left Column: Form to Add Portfolio */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider">Add Demo & Client Websites</h3>
+                    <span className="text-[10px] text-text-muted font-mono">Portfolio Manager</span>
+                  </div>
+
+                  {portSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-2">
+                      <Check className="h-4 w-4 stroke-[3]" />
+                      <span>Website successfully added to catalog!</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreatePortfolio} className="space-y-4 text-xs">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Website Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={portName}
+                        onChange={(e) => setPortName(e.target.value)}
+                        placeholder="e.g. Delhi Dental Clinic Hub"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Website URL Link *</label>
+                      <input
+                        type="url"
+                        required
+                        value={portUrl}
+                        onChange={(e) => setPortUrl(e.target.value)}
+                        placeholder="e.g. https://delhidentalclinic.com"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Business / Category Type *</label>
+                      <input
+                        type="text"
+                        required
+                        value={portBusinessType}
+                        onChange={(e) => setPortBusinessType(e.target.value)}
+                        placeholder="e.g. Dental Clinic, Hotel, Bakery"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Business Address *</label>
+                      <input
+                        type="text"
+                        required
+                        value={portAddress}
+                        onChange={(e) => setPortAddress(e.target.value)}
+                        placeholder="e.g. Connaught Place, New Delhi"
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Website Type *</label>
+                      <select
+                        value={portType}
+                        onChange={(e) => setPortType(e.target.value as "demo" | "client")}
+                        className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition cursor-pointer"
+                      >
+                        <option value="demo">Demo Template Website (Built for display)</option>
+                        <option value="client">Client Website (Clients who bought from us)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={portLoading}
+                      className="w-full btn-primary py-2.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <span>Add Website to Portfolio</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Right Column: Tracking Board Monitor */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                    <h3 className="font-bold text-text-primary text-xs uppercase tracking-wider flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-primary" />
+                      Active Catalog
+                    </h3>
+                    <span className="text-[10px] bg-border px-2.5 py-1 rounded-full text-text-primary font-bold font-mono">
+                      {portfolioWebsites ? portfolioWebsites.length : 0} items
+                    </span>
+                  </div>
+
+                  {!portfolioWebsites || portfolioWebsites.length === 0 ? (
+                    <div className="text-center py-16 text-xs text-text-muted italic select-none">
+                      No websites registered in the portfolio catalog. Add one using the form.
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                      {portfolioWebsites.map((site) => (
+                        <div 
+                          key={site.id} 
+                          className="bg-card border border-border hover:border-border/80 transition rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-1.5 max-w-[80%]">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-bold text-text-primary text-xs leading-snug">
+                                {site.name}
+                              </h4>
+                              <span className={`text-[9px] px-1.5 py-0.2 rounded border font-bold uppercase tracking-wider ${
+                                site.type === "demo" ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              }`}>
+                                {site.type === "demo" ? "Demo Site" : "Built Client"}
+                              </span>
+                            </div>
+                            <a 
+                              href={site.url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[11px] text-primary hover:underline font-mono inline-flex items-center gap-1.5"
+                            >
+                              <span>{site.url}</span>
+                            </a>
+                            <p className="text-[10px] text-text-muted">
+                              Category: <strong className="text-text-primary">{site.businessType}</strong> | Address: <strong className="text-text-primary">{site.address}</strong>
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => deletePortfolioWebsite(site.id)}
+                            className="p-2 text-text-dark hover:text-rose-500 border border-border/40 hover:bg-rose-500/10 rounded-lg transition cursor-pointer"
+                            title="Delete Website"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

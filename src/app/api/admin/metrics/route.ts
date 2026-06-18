@@ -44,6 +44,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === "updateUserProfile") {
+      const { userId, name, password } = payload;
+      serverState.users = serverState.users.map(u => 
+        u.id === userId ? { ...u, name, ...(password ? { password } : {}) } : u
+      );
+      
+      serverState.activities.unshift({
+        id: `act_${Date.now()}`,
+        leadId: "profile",
+        leadName: "User Profile Settings",
+        action: `User "${name}" updated their profile settings${password ? " (including password)" : ""}`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return NextResponse.json({ success: true });
+    }
+
     if (action === "toggleBanUser") {
       const { userId } = payload;
       serverState.users = serverState.users.map(u => 

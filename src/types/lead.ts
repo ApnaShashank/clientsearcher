@@ -78,6 +78,7 @@ export interface User {
   plan: "Free" | "Pro" | "Enterprise";
   isBanned: boolean;
   joinedAt: string;
+  password?: string;
 }
 
 export interface SearchFilters {
@@ -97,3 +98,37 @@ export interface SearchFilters {
   highReviewCount: boolean;
   premiumLeadScore: boolean;
 }
+
+export interface AdminTask {
+  id: string;
+  businessName: string;
+  phoneNumber: string;
+  googleMapsUrl: string;
+  address: string;
+  dispatchedAt: string;
+  pdfUrl?: string;
+  acceptedBy: string | null;      // user ID of the operator who accepted
+  acceptedByName: string | null;  // user Name of the operator who accepted
+  status: "Pending" | "Contacted" | "Interested" | "Not Interested" | "Won" | "Lost";
+  notes?: string;
+}
+
+export interface SystemNotification {
+  id: string;
+  recipientId: string; // "all" | "admin" | specific userId
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  senderName: string;
+}
+
+export interface PortfolioWebsite {
+  id: string;
+  name: string;
+  url: string;
+  businessType: string;
+  address: string;
+  type: "demo" | "client";
+}
+

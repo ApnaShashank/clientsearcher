@@ -10,26 +10,17 @@ export default function FilterPanel() {
   const handleToggle = (name: keyof typeof filters) => {
     const updated = !filters[name];
     setFilters({ [name]: updated });
-    // Automatically trigger local re-search to update table
-    setTimeout(() => {
-      executeSearch();
-    }, 50);
   };
 
   const handleRatingSelect = (rating: number) => {
     setFilters({ minRating: filters.minRating === rating ? 0 : rating });
-    setTimeout(() => {
-      executeSearch();
-    }, 50);
   };
 
   const handleReviewsInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value) || 0;
     setFilters({ minReviews: val });
-    setTimeout(() => {
-      executeSearch();
-    }, 150); // small debounce
   };
+
 
   const filterSections = [
     {
@@ -73,8 +64,8 @@ export default function FilterPanel() {
           type="button"
           onClick={() => {
             resetFilters();
-            setTimeout(() => executeSearch(), 50);
           }}
+
           className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-primary transition cursor-pointer"
         >
           <RotateCcw className="h-3 w-3" />
@@ -82,8 +73,7 @@ export default function FilterPanel() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-6">
-        {/* Rating and Reviews Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {filterSections.map((section, idx) => (
           <div key={idx} className="space-y-2.5">
             <h4 className="text-[10px] uppercase font-bold tracking-wider text-text-muted border-b border-border/30 pb-1">
@@ -115,45 +105,49 @@ export default function FilterPanel() {
             </div>
           </div>
         ))}
-      </div>
 
-      {/* Ratings and Reviews filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 pt-3 border-t border-border/55">
-        {/* Min Rating */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Rating</label>
-          <div className="flex items-center gap-2">
-            {[3.5, 4.0, 4.5].map((stars) => {
-              const isSelected = filters.minRating === stars;
-              return (
-                <button
-                  key={stars}
-                  type="button"
-                  onClick={() => handleRatingSelect(stars)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs transition cursor-pointer ${
-                    isSelected
-                      ? "bg-border text-primary border-primary/20"
-                      : "bg-background text-text-muted border-border hover:text-text-primary"
-                  }`}
-                >
-                  <Star className={`h-3 w-3 ${isSelected ? "fill-primary text-primary" : "text-text-muted"}`} />
-                  <span>{stars}+</span>
-                </button>
-              );
-            })}
+        {/* Ratings and Reviews filters */}
+        <div className="space-y-3.5 lg:border-l lg:border-border/30 lg:pl-6">
+          <h4 className="text-[10px] uppercase font-bold tracking-wider text-text-muted border-b border-border/30 pb-1">
+            Ratings & Reviews
+          </h4>
+          
+          {/* Min Rating */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Rating</label>
+            <div className="flex items-center gap-1.5">
+              {[3.5, 4.0, 4.5].map((stars) => {
+                const isSelected = filters.minRating === stars;
+                return (
+                  <button
+                    key={stars}
+                    type="button"
+                    onClick={() => handleRatingSelect(stars)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] transition cursor-pointer ${
+                      isSelected
+                        ? "bg-border text-primary border-primary/20"
+                        : "bg-background text-text-muted border-border hover:text-text-primary"
+                    }`}
+                  >
+                    <Star className={`h-3 w-3 ${isSelected ? "fill-primary text-primary" : "text-text-muted"}`} />
+                    <span>{stars}+</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* Min Reviews Count */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Reviews Count</label>
-          <input
-            type="number"
-            value={filters.minReviews || ""}
-            onChange={handleReviewsInput}
-            placeholder="e.g. 50 reviews"
-            className="w-full max-w-[200px] bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder-text-dark focus:outline-none focus:border-primary transition"
-          />
+          {/* Min Reviews Count */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Reviews Count</label>
+            <input
+              type="number"
+              value={filters.minReviews || ""}
+              onChange={handleReviewsInput}
+              placeholder="e.g. 50 reviews"
+              className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder-text-dark focus:outline-none focus:border-primary transition"
+            />
+          </div>
         </div>
       </div>
     </div>

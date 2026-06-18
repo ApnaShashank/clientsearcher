@@ -1,3 +1,5 @@
+import { AdminTask, SystemNotification, PortfolioWebsite } from "@/types/lead";
+
 export interface ServerState {
   onlineUsers: Record<string, number>; // sessionId -> lastActiveTimestamp
   searchLogs: any[];
@@ -6,7 +8,11 @@ export interface ServerState {
   apiKeyUsage: Record<string, number>;
   customApiKeys: Record<string, string>;
   notifications: any[];
+  adminTasks: AdminTask[];
+  systemNotifications: SystemNotification[];
+  portfolioWebsites: PortfolioWebsite[];
 }
+
 
 
 declare global {
@@ -100,8 +106,51 @@ if (!global.__serverState) {
       "OPENAI_API_KEY": "",
       "TAVILY_API_KEY": ""
     },
-    notifications: []
-
+    notifications: [],
+    adminTasks: [],
+    systemNotifications: [],
+    portfolioWebsites: [
+      {
+        id: "port_1",
+        name: "Vaidya Dental Care Clinic",
+        url: "https://vaidyadental.com",
+        businessType: "Dental Clinic",
+        address: "Malleshwaram, Bengaluru, Karnataka",
+        type: "client"
+      },
+      {
+        id: "port_2",
+        name: "The Spice Route Café",
+        url: "https://spiceroutecafe.in",
+        businessType: "Premium Casual Restaurant",
+        address: "Indiranagar, Bengaluru, Karnataka",
+        type: "client"
+      },
+      {
+        id: "port_3",
+        name: "Aura Premium Salon & Spa",
+        url: "https://aurasalonmumbai.com",
+        businessType: "Beauty & Wellness Salon",
+        address: "Bandra West, Mumbai, Maharashtra",
+        type: "client"
+      },
+      {
+        id: "port_4",
+        name: "Localead SaaS Landing Template",
+        url: "https://templates.localead.com/leadfinder-saas",
+        businessType: "SaaS Software Landing Page",
+        address: "Electronic City, Bengaluru, India",
+        type: "demo"
+      },
+      {
+        id: "port_5",
+        name: "Apex Luxury Real Estate Portal",
+        url: "https://templates.localead.com/apex-realestate",
+        businessType: "Real Estate Directory Template",
+        address: "Connaught Place, New Delhi, India",
+        type: "demo"
+      }
+    ]
   };
 }
 

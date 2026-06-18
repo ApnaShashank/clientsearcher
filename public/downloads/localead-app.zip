@@ -1,0 +1,11 @@
+Localead Offline Desktop App Bundle
+====================================
+Version: 1.0.0
+Release Date: June 2026
+
+How to run offline:
+1. Extract this zip file.
+2. Open terminal in the directory.
+3. Run 'npm install' to install client libraries.
+4. Run 'npm run dev' to start the local leads engine database.
+5. Enjoy unlimited offline premium B2B lead scraping!

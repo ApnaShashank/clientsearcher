@@ -65,8 +65,8 @@ export default function FilterPanel() {
           onClick={() => {
             resetFilters();
           }}
-
           className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-primary transition cursor-pointer"
+          aria-label="Reset all lead filters"
         >
           <RotateCcw className="h-3 w-3" />
           Reset All
@@ -86,8 +86,11 @@ export default function FilterPanel() {
                   <button
                     key={item.key}
                     type="button"
+                    role="checkbox"
+                    aria-checked={isChecked}
                     onClick={() => handleToggle(item.key)}
                     className="flex w-full items-center justify-between text-left text-xs text-text-muted hover:text-text-primary transition-colors py-0.5 group cursor-pointer"
+                    aria-label={item.label}
                   >
                     <span className={isChecked ? "text-primary font-medium" : ""}>
                       {item.label}
@@ -114,8 +117,8 @@ export default function FilterPanel() {
           
           {/* Min Rating */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Rating</label>
-            <div className="flex items-center gap-1.5">
+            <label id="rating-label" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Rating</label>
+            <div className="flex items-center gap-1.5" role="group" aria-labelledby="rating-label">
               {[3.5, 4.0, 4.5].map((stars) => {
                 const isSelected = filters.minRating === stars;
                 return (
@@ -128,6 +131,8 @@ export default function FilterPanel() {
                         ? "bg-border text-primary border-primary/20"
                         : "bg-background text-text-muted border-border hover:text-text-primary"
                     }`}
+                    aria-label={`Minimum rating ${stars} stars`}
+                    aria-pressed={isSelected}
                   >
                     <Star className={`h-3 w-3 ${isSelected ? "fill-primary text-primary" : "text-text-muted"}`} />
                     <span>{stars}+</span>
@@ -139,9 +144,10 @@ export default function FilterPanel() {
 
           {/* Min Reviews Count */}
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Reviews Count</label>
+            <label htmlFor="filter-min-reviews" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Minimum Reviews Count</label>
             <input
               type="number"
+              id="filter-min-reviews"
               value={filters.minReviews || ""}
               onChange={handleReviewsInput}
               placeholder="e.g. 50 reviews"

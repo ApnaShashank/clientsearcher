@@ -64,6 +64,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <button
           onClick={onClose}
           className="absolute right-4 top-4 p-1.5 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-card-hover transition cursor-pointer"
+          aria-label="Close profile settings modal"
         >
           <X className="h-4 w-4" />
         </button>
@@ -95,11 +96,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Full Name</label>
+            <label htmlFor="settings-name" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Full Name</label>
             <div className="relative">
               <User className="absolute left-3.5 top-3 h-3.5 w-3.5 text-text-muted" />
               <input
                 type="text"
+                id="settings-name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -110,9 +112,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Account Email</label>
+            <label htmlFor="settings-email" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Account Email</label>
             <input
               type="email"
+              id="settings-email"
               disabled
               value={currentUser.email}
               className="w-full bg-[#161616] border border-border/40 rounded-lg px-3 py-2.5 text-xs text-text-muted cursor-not-allowed select-none"
@@ -120,11 +123,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">New Password (Optional)</label>
+            <label htmlFor="settings-password" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">New Password (Optional)</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-3 h-3.5 w-3.5 text-text-muted" />
               <input
                 type="password"
+                id="settings-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="•••••••• (Leave blank to keep current)"

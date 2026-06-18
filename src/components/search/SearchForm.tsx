@@ -226,12 +226,13 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
       <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 relative">
         {/* Country input with Autocomplete */}
         <div className="space-y-1.5 relative">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Country</label>
+          <label htmlFor="search-country" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Country</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-text-muted" />
             <input
               type="text"
               name="country"
+              id="search-country"
               value={searchParams.country}
               onChange={handleInputChange}
               onFocus={() => setActiveField("country")}
@@ -257,10 +258,11 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
 
         {/* State input with Autocomplete */}
         <div className="space-y-1.5 relative">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">State / Region</label>
+          <label htmlFor="search-state" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">State / Region</label>
           <input
             type="text"
             name="state"
+            id="search-state"
             value={searchParams.state}
             onChange={handleInputChange}
             onFocus={() => setActiveField("state")}
@@ -293,10 +295,11 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
 
         {/* City input with Autocomplete */}
         <div className="space-y-1.5 relative">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">City *</label>
+          <label htmlFor="search-city" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">City *</label>
           <input
             type="text"
             name="city"
+            id="search-city"
             value={searchParams.city}
             onChange={handleInputChange}
             onFocus={() => setActiveField("city")}
@@ -329,11 +332,12 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
 
         {/* Category */}
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Category *</label>
+          <label htmlFor="search-category" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Category *</label>
           <div className="relative">
             <Layers className="absolute left-3 top-2.5 h-3.5 w-3.5 text-text-muted" />
             <select
               name="category"
+              id="search-category"
               value={searchParams.category}
               onChange={handleInputChange}
               className="w-full bg-background border border-border rounded-lg pl-8.5 pr-3 py-2 text-xs text-text-primary focus:outline-none focus:border-primary transition appearance-none cursor-pointer"
@@ -350,10 +354,11 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
         {/* Custom Category / Pin Code */}
         {searchParams.category === "Custom" ? (
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Custom Category</label>
+            <label htmlFor="search-custom-category" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Custom Category</label>
             <input
               type="text"
               name="customCategory"
+              id="search-custom-category"
               value={searchParams.customCategory}
               onChange={handleInputChange}
               placeholder="e.g. Pet Salon, Bakery"
@@ -362,10 +367,11 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
           </div>
         ) : (
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Pin / ZIP Code (Optional)</label>
+            <label htmlFor="search-pincode" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Pin / ZIP Code (Optional)</label>
             <input
               type="text"
               name="pinCode"
+              id="search-pincode"
               value={searchParams.pinCode}
               onChange={handleInputChange}
               placeholder="e.g. 10001"
@@ -389,9 +395,10 @@ export default function SearchForm({ onSearchComplete }: SearchFormProps) {
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Result Count Selector */}
           <div className="flex items-center gap-1.5 text-xs text-text-muted">
-            <span>Show:</span>
+            <label htmlFor="search-limit">Show:</label>
             <select
               name="limit"
+              id="search-limit"
               value={searchParams.limit}
               onChange={handleInputChange}
               className="bg-background border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-primary transition cursor-pointer"

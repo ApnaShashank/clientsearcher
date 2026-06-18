@@ -68,6 +68,7 @@ export default function AuthModal({ isOpen, onClose, defaultRegister = false }: 
         <button
           onClick={onClose}
           className="absolute right-4 top-4 p-1.5 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-card-hover transition cursor-pointer"
+          aria-label="Close authentication modal"
         >
           <X className="h-4 w-4" />
         </button>
@@ -98,9 +99,10 @@ export default function AuthModal({ isOpen, onClose, defaultRegister = false }: 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {isRegister && (
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Full Name</label>
+              <label htmlFor="auth-name" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Full Name</label>
               <input
                 type="text"
+                id="auth-name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -111,11 +113,12 @@ export default function AuthModal({ isOpen, onClose, defaultRegister = false }: 
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Email Address</label>
+            <label htmlFor="auth-email" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-3 h-3.5 w-3.5 text-text-muted" />
               <input
                 type="email"
+                id="auth-email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -126,11 +129,12 @@ export default function AuthModal({ isOpen, onClose, defaultRegister = false }: 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Password</label>
+            <label htmlFor="auth-password" className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Password</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-3 h-3.5 w-3.5 text-text-muted" />
               <input
                 type={showPassword ? "text" : "password"}
+                id="auth-password"
                 required={email.toLowerCase() === "admin@localead" || isRegister}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -141,6 +145,8 @@ export default function AuthModal({ isOpen, onClose, defaultRegister = false }: 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-3 text-text-muted hover:text-text-primary cursor-pointer"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
               >
                 {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>

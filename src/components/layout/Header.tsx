@@ -146,6 +146,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               onClick={toggleTheme}
               className="p-2 rounded-lg border border-border bg-card text-text-muted hover:text-text-primary hover:bg-card-hover transition cursor-pointer"
               title="Toggle theme mode"
+              aria-label="Toggle theme mode"
             >
               {theme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
             </button>
@@ -160,6 +161,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                   }}
                   className="p-2 rounded-lg border border-border bg-card text-text-muted hover:text-text-primary hover:bg-card-hover transition cursor-pointer relative"
                   title="System notifications"
+                  aria-label="System notifications"
                 >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
@@ -177,6 +179,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                         <button
                           onClick={() => markAllNotificationsRead()}
                           className="text-primary hover:underline font-semibold text-[10px] cursor-pointer"
+                          aria-label="Mark all alerts as read"
                         >
                           Mark all read
                         </button>
@@ -228,6 +231,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                     setShowNotificationsMenu(false);
                   }}
                   className="flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-3 transition hover:bg-card-hover"
+                  aria-label="User profile menu"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary font-medium text-xs">
                     {currentUser.name[0]}
@@ -346,6 +350,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                   ? "text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
+              aria-label={item.label}
             >
               <Icon className="h-4.5 w-4.5 mb-0.5 shrink-0" />
               <span className="truncate w-full text-center block text-[9px] uppercase tracking-wider leading-none mt-0.5">{item.shortLabel}</span>

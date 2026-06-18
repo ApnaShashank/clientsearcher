@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import SearchForm from "@/components/search/SearchForm";
-import FilterPanel from "@/components/search/FilterPanel";
-import ResultsTable from "@/components/search/ResultsTable";
-import LeadDrawer from "@/components/leads/LeadDrawer";
-import PipelineView from "@/components/crm/PipelineView";
-import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
-import AdminPanel from "@/components/admin/AdminPanel";
-import TaskBoard from "@/components/tasks/TaskBoard";
+
+const FilterPanel = dynamic(() => import("@/components/search/FilterPanel"), { ssr: false });
+const ResultsTable = dynamic(() => import("@/components/search/ResultsTable"), { ssr: false });
+const LeadDrawer = dynamic(() => import("@/components/leads/LeadDrawer"), { ssr: false });
+const PipelineView = dynamic(() => import("@/components/crm/PipelineView"), { ssr: false });
+const AnalyticsDashboard = dynamic(() => import("@/components/analytics/AnalyticsDashboard"), { ssr: false });
+const AdminPanel = dynamic(() => import("@/components/admin/AdminPanel"), { ssr: false });
+const TaskBoard = dynamic(() => import("@/components/tasks/TaskBoard"), { ssr: false });
 import { useAppStore } from "@/store/useAppStore";
 import { useMounted } from "@/hooks/useMounted";
 import { Lead } from "@/types/lead";

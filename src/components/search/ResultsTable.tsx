@@ -136,6 +136,7 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
             checked={selectedLeads.length === searchResults.length && searchResults.length > 0}
             onChange={toggleSelectAll}
             className="rounded border-border focus:ring-0 cursor-pointer accent-primary h-4 w-4"
+            aria-label="Select all search results"
           />
           <span className="text-xs text-text-muted font-medium">
             Select All ({selectedLeads.length} of {searchResults.length} selected)
@@ -190,6 +191,7 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
                       checked={isLeadSelected}
                       onChange={() => toggleSelectLead(lead.id)}
                       className="rounded border-border focus:ring-0 cursor-pointer accent-primary h-3.5 w-3.5 mt-0.5"
+                      aria-label={`Select ${lead.businessName}`}
                     />
                     <h4 className="font-bold text-text-primary text-xs leading-tight group-hover:text-primary transition-colors line-clamp-1">
                       {lead.businessName}
@@ -285,19 +287,19 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
                 {/* Social icons */}
                 <div className="flex items-center gap-2 shrink-0">
                   {lead.facebookUrl ? (
-                    <a href={lead.facebookUrl} target="_blank" rel="noreferrer" className="text-indigo-400 bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20 hover:text-white hover:bg-indigo-500/25 transition">
+                    <a href={lead.facebookUrl} target="_blank" rel="noreferrer" className="text-indigo-400 bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20 hover:text-white hover:bg-indigo-500/25 transition" aria-label={`${lead.businessName} Facebook Profile`}>
                       <Facebook className="h-3.5 w-3.5" />
                     </a>
                   ) : (
-                    <Facebook className="h-3.5 w-3.5 text-text-dark/40 opacity-20" />
+                    <Facebook className="h-3.5 w-3.5 text-text-dark/40 opacity-20" aria-hidden="true" />
                   )}
 
                   {lead.instagramUrl ? (
-                    <a href={lead.instagramUrl} target="_blank" rel="noreferrer" className="text-pink-400 bg-pink-500/10 p-1.5 rounded-lg border border-pink-500/20 hover:text-white hover:bg-pink-500/25 transition">
+                    <a href={lead.instagramUrl} target="_blank" rel="noreferrer" className="text-pink-400 bg-pink-500/10 p-1.5 rounded-lg border border-pink-500/20 hover:text-white hover:bg-pink-500/25 transition" aria-label={`${lead.businessName} Instagram Profile`}>
                       <Instagram className="h-3.5 w-3.5" />
                     </a>
                   ) : (
-                    <Instagram className="h-3.5 w-3.5 text-text-dark/40 opacity-20" />
+                    <Instagram className="h-3.5 w-3.5 text-text-dark/40 opacity-20" aria-hidden="true" />
                   )}
                 </div>
 
@@ -308,6 +310,7 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
                       value={status}
                       onChange={(e) => updateLeadStatus(lead.id, e.target.value as OutreachStatus)}
                       className={`rounded-lg border px-2 py-1 text-[10px] font-bold focus:outline-none focus:ring-0 ${getStatusStyle(status)} bg-card cursor-pointer`}
+                      aria-label={`Outreach status for ${lead.businessName}`}
                     >
                       <option value="Not Contacted" className="bg-card text-zinc-500">Not Contacted</option>
                       <option value="Contacted" className="bg-card text-blue-500">Contacted</option>
@@ -342,6 +345,7 @@ export default function ResultsTable({ onRowClick }: ResultsTableProps) {
                       }}
                       className="text-text-dark hover:text-rose-400 p-1.5 transition cursor-pointer shrink-0"
                       title="Remove saved lead"
+                      aria-label={`Remove ${lead.businessName} from saved list`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

@@ -37,6 +37,7 @@ export default function PortfolioModal({ isOpen, onClose }: PortfolioModalProps)
         <button
           onClick={onClose}
           className="absolute right-5 top-5 p-1.5 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-card-hover transition cursor-pointer"
+          aria-label="Close portfolio modal"
         >
           <X className="h-4 w-4" />
         </button>
@@ -95,6 +96,7 @@ export default function PortfolioModal({ isOpen, onClose }: PortfolioModalProps)
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-primary transition"
+              aria-label="Search website catalog"
             />
           </div>
         </div>
@@ -138,6 +140,7 @@ export default function PortfolioModal({ isOpen, onClose }: PortfolioModalProps)
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px] font-bold px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      aria-label={`Visit live site for ${site.name}`}
                     >
                       <span>Visit Live Site</span>
                       <ExternalLink className="h-3 w-3" />

@@ -7,7 +7,7 @@
   --border: #1F1F1F;
   --text-primary: #FFFFFF;
   --text-muted: #B4B4B4;
-  --text-dark: #444444;
+  --text-dark: #8F8F8F;
 }
 
 :root.light, .light {
@@ -16,8 +16,8 @@
   --card-hover: #F1F3F5;
   --border: #E9ECEF;
   --text-primary: #111111;
-  --text-muted: #6C757D;
-  --text-dark: #ADB5BD;
+  --text-muted: #595959;
+  --text-dark: #767676;
 }
 
 @theme {

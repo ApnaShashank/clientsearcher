@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocumentProxy, extractText } from "unpdf";
 
 export const maxDuration = 30;
 
@@ -14,26 +14,12 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Parse PDF text using legacy pdfjs-dist safely (no native/canvas dependencies)
-    const uint8Array = new Uint8Array(buffer);
-    const loadingTask = pdfjs.getDocument({
-      data: uint8Array,
-      useSystemFonts: true,
-      disableFontFace: true,
-    });
-    const doc = await loadingTask.promise;
-    let text = "";
-
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      const strings = content.items
-        .filter((item: any) => typeof item.str === "string")
-        .map((item: any) => item.str);
-      text += strings.join(" ") + "\n";
-      page.cleanup();
-    }
-    await doc.destroy();
+    // Parse PDF text using unpdf safely (zero native dependencies, serverless-safe)
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const result = await extractText(pdf);
+    const text = Array.isArray(result.text) 
+      ? result.text.join("\n") 
+      : (typeof result.text === "string" ? result.text : "");
 
     // Extract leads using patterns from the text
     const lines = text

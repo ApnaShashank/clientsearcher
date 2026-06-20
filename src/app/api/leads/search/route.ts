@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Lead } from "@/types/lead";
 import { serverState } from "@/lib/serverState";
+import { syncState, saveState } from "@/lib/db";
 
 export const maxDuration = 30; // Allow enough time for AI and search requests
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const body = await request.json();
     const { 
       country = "United States", 
@@ -202,6 +204,10 @@ Make sure details like email, phone numbers, and websites are highly relevant to
       action: `Searched for "${searchTerm}" in "${city}" (found ${finalLeads.length} real-time leads)`,
       timestamp: new Date().toISOString()
     });
+
+    await saveState("apiKeyUsage");
+    await saveState("searchLogs");
+    await saveState("activities");
 
     return NextResponse.json({ leads: finalLeads });
   } catch (error: any) {

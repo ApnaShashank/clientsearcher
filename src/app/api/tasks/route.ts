@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverState } from "@/lib/serverState";
 import { AdminTask } from "@/types/lead";
+import { syncState, saveState } from "@/lib/db";
 
 export async function GET() {
+  await syncState();
   return NextResponse.json({
     tasks: serverState.adminTasks || []
   });
@@ -10,6 +12,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const { action, payload } = await request.json();
 
     if (!serverState.adminTasks) {
@@ -61,6 +64,10 @@ export async function POST(request: NextRequest) {
         senderName: "Administrator"
       });
 
+      await saveState("adminTasks");
+      await saveState("activities");
+      await saveState("systemNotifications");
+
       return NextResponse.json({ success: true, task: newTask });
     }
 
@@ -98,6 +105,9 @@ export async function POST(request: NextRequest) {
         action: `Task accepted by operator "${userName}" (${userId})`,
         timestamp: new Date().toISOString()
       });
+
+      await saveState("adminTasks");
+      await saveState("activities");
 
       return NextResponse.json({ success: true, task });
     }
@@ -144,6 +154,10 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
 
+      await saveState("adminTasks");
+      await saveState("systemNotifications");
+      await saveState("activities");
+
       return NextResponse.json({ success: true, task });
     }
 
@@ -187,6 +201,10 @@ export async function POST(request: NextRequest) {
         action: `Operator updated task notes`,
         timestamp: new Date().toISOString()
       });
+
+      await saveState("adminTasks");
+      await saveState("systemNotifications");
+      await saveState("activities");
 
       return NextResponse.json({ success: true, task });
     }

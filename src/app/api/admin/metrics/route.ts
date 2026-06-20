@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverState } from "@/lib/serverState";
+import { syncState, saveState } from "@/lib/db";
 
 export async function GET() {
+  await syncState();
   const onlineCount = Math.max(1, Object.keys(serverState.onlineUsers).length);
   return NextResponse.json({
     users: serverState.users,
@@ -18,6 +20,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const { action, payload } = await request.json();
 
     if (action === "updateKeys") {
@@ -34,6 +37,8 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
 
+      await saveState("customApiKeys");
+      await saveState("activities");
       return NextResponse.json({ success: true, customApiKeys: serverState.customApiKeys });
     }
 
@@ -42,6 +47,7 @@ export async function POST(request: NextRequest) {
       serverState.users = serverState.users.map(u => 
         u.id === userId ? { ...u, plan } : u
       );
+      await saveState("users");
       return NextResponse.json({ success: true });
     }
 
@@ -59,6 +65,8 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
       
+      await saveState("users");
+      await saveState("activities");
       return NextResponse.json({ success: true });
     }
 
@@ -67,12 +75,14 @@ export async function POST(request: NextRequest) {
       serverState.users = serverState.users.map(u => 
         u.id === userId ? { ...u, isBanned: !u.isBanned } : u
       );
+      await saveState("users");
       return NextResponse.json({ success: true });
     }
 
     if (action === "deleteUser") {
       const { userId } = payload;
       serverState.users = serverState.users.filter(u => u.id !== userId);
+      await saveState("users");
       return NextResponse.json({ success: true });
     }
 
@@ -120,6 +130,10 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         });
       }
+      await saveState("forwardedLeads");
+      await saveState("users");
+      await saveState("systemNotifications");
+      await saveState("activities");
       return NextResponse.json({ success: true, forwardedLeads: serverState.forwardedLeads });
     }
 
@@ -159,6 +173,9 @@ export async function POST(request: NextRequest) {
       });
 
       // Synchronize currentUser back if active
+      await saveState("users");
+      await saveState("systemNotifications");
+      await saveState("activities");
       return NextResponse.json({ success: true, users: serverState.users });
     }
 
@@ -199,6 +216,9 @@ export async function POST(request: NextRequest) {
         return u;
       });
 
+      await saveState("users");
+      await saveState("systemNotifications");
+      await saveState("activities");
       return NextResponse.json({ success: true, users: serverState.users });
     }
 

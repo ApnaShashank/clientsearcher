@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverState } from "@/lib/serverState";
+import { syncState, saveState } from "@/lib/db";
 
 // Extend server state with notifications if not initialized
 if (!(serverState as any).notifications) {
@@ -8,6 +9,7 @@ if (!(serverState as any).notifications) {
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const { leadId, leadDetails, userEmail, userName, userId = "guest" } = await request.json();
 
     if (!leadDetails) {
@@ -105,6 +107,11 @@ Please review the logs in the admin administration panel.
       action: `Lead forwarded to shashank8808108802@gmail.com by ${userName} (${userEmail})`,
       timestamp: new Date().toISOString()
     });
+
+    await saveState("notifications");
+    await saveState("forwardedLeads");
+    await saveState("systemNotifications");
+    await saveState("activities");
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

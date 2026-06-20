@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverState } from "@/lib/serverState";
 import { PortfolioWebsite } from "@/types/lead";
+import { syncState, saveState } from "@/lib/db";
 
 export async function GET() {
   try {
+    await syncState();
     if (!serverState.portfolioWebsites) {
       serverState.portfolioWebsites = [];
     }
@@ -15,6 +17,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const { action, payload } = await request.json();
 
     if (!serverState.portfolioWebsites) {
@@ -47,6 +50,8 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
 
+      await saveState("portfolioWebsites");
+      await saveState("activities");
       return NextResponse.json({ success: true, website: newWebsite });
     }
 
@@ -65,6 +70,8 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         });
       }
+      await saveState("portfolioWebsites");
+      await saveState("activities");
       return NextResponse.json({ success: true });
     }
 

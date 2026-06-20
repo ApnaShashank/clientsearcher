@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverState } from "@/lib/serverState";
+import { syncState, saveState } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
+    await syncState();
     const { email, password, name } = await request.json();
 
     if (!email) {
@@ -38,6 +40,9 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
 
+      await saveState("users");
+      await saveState("activities");
+
       return NextResponse.json({ user: adminUser });
     }
 
@@ -69,7 +74,10 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-    return NextResponse.json({ user });
+    await saveState("users");
+    await saveState("activities");
+
+    return NextResponse.json({ user: user });
   } catch (err: any) {
     console.error("Login API route error:", err);
     return NextResponse.json({ error: err.message || "Failed to authenticate" }, { status: 500 });

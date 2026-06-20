@@ -536,7 +536,7 @@ export default function AdminPanel() {
       {/* Main Admin Section */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         {/* Tab selection */}
-        <div className="flex border-b border-border bg-card-hover/20 px-4 overflow-x-auto scrollbar-none">
+        <div className="grid grid-cols-2 gap-1 p-2 md:flex md:gap-0 md:p-0 md:px-4 border-b border-border bg-card-hover/20 select-none overflow-x-auto md:overflow-visible scrollbar-none">
           {[
             { id: "users", label: "Users Registry" },
             { id: "keys", label: "API Configuration Overrides" },
@@ -548,10 +548,10 @@ export default function AdminPanel() {
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id as any)}
-              className={`py-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer whitespace-nowrap ${
+              className={`py-2 px-3 md:py-3 md:px-4 text-[10px] md:text-xs font-semibold text-center rounded-lg md:rounded-none md:border-b-2 transition cursor-pointer md:whitespace-nowrap ${
                 activeSubTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-text-muted hover:text-text-primary"
+                  ? "bg-primary/10 text-primary md:bg-transparent md:border-primary"
+                  : "bg-transparent text-text-muted hover:text-text-primary md:border-transparent"
               }`}
             >
               {tab.label}
@@ -563,72 +563,145 @@ export default function AdminPanel() {
         <div className="p-5">
           {/* USER MANAGEMENT TAB */}
           {activeSubTab === "users" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-background text-text-muted font-semibold">
-                    <th className="py-2.5 px-4">User Email / Account Name</th>
-                    <th className="py-2.5 px-4">Role</th>
-                    <th className="py-2.5 px-4">Subscription Plan</th>
-                    <th className="py-2.5 px-4">Account Status</th>
-                    <th className="py-2.5 px-4">Date Joined</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {metrics.users.map((u: any) => (
-                    <tr key={u.id} className="hover:bg-card-hover/20 transition">
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-text-primary">{u.name}</div>
-                        <div className="text-[10px] text-text-muted mt-0.5">{u.email}</div>
-                      </td>
-                      <td className="py-3.5 px-4 capitalize font-semibold text-text-primary">
-                        {u.role}
-                      </td>
-                      <td className="py-3.5 px-4">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-background text-text-muted font-semibold">
+                      <th className="py-2.5 px-4">User Email / Account Name</th>
+                      <th className="py-2.5 px-4">Role</th>
+                      <th className="py-2.5 px-4">Subscription Plan</th>
+                      <th className="py-2.5 px-4">Account Status</th>
+                      <th className="py-2.5 px-4">Date Joined</th>
+                      <th className="py-2.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {metrics.users.map((u: any) => (
+                      <tr key={u.id} className="hover:bg-card-hover/20 transition">
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-text-primary">{u.name}</div>
+                          <div className="text-[10px] text-text-muted mt-0.5">{u.email}</div>
+                        </td>
+                        <td className="py-3.5 px-4 capitalize font-semibold text-text-primary">
+                          {u.role}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <select
+                            value={u.plan}
+                            onChange={(e) => handleUpdatePlan(u.id, e.target.value)}
+                            className="bg-background border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none cursor-pointer"
+                          >
+                            <option value="Free">Free</option>
+                            <option value="Pro">Pro ($49)</option>
+                            <option value="Enterprise">Enterprise ($249)</option>
+                          </select>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            u.isBanned 
+                              ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" 
+                              : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                          }`}>
+                            {u.isBanned ? "Suspended / Banned" : "Active"}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-text-muted font-mono">{u.joinedAt}</td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleToggleBan(u.id)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded bg-background text-rose-500 hover:bg-rose-500/10 border border-border text-[10px] font-semibold transition cursor-pointer"
+                            >
+                              <Ban className="h-3 w-3" />
+                              {u.isBanned ? "Lift Ban" : "Ban Account"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="p-1 text-text-dark hover:text-rose-500 transition cursor-pointer"
+                              title="Delete User permanently"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card-Based Grid View */}
+              <div className="block md:hidden space-y-4">
+                {metrics.users.map((u: any) => (
+                  <div key={u.id} className="bg-background border border-border rounded-xl p-4.5 space-y-3.5 shadow-sm">
+                    {/* User profile & email */}
+                    <div className="flex justify-between items-start gap-2 border-b border-border/40 pb-2.5">
+                      <div>
+                        <div className="font-extrabold text-text-primary text-sm leading-snug">{u.name}</div>
+                        <div className="text-[10px] text-text-muted mt-0.5 font-mono">{u.email}</div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                        u.isBanned 
+                          ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" 
+                          : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                      }`}>
+                        {u.isBanned ? "Banned" : "Active"}
+                      </span>
+                    </div>
+
+                    {/* Meta info grid */}
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-text-muted">
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-wider font-bold text-text-dark/80">Role</span>
+                        <span className="font-semibold text-text-primary capitalize mt-0.5 block">{u.role}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-wider font-bold text-text-dark/80">Joined Date</span>
+                        <span className="font-mono mt-0.5 block text-text-primary">{u.joinedAt}</span>
+                      </div>
+                      
+                      <div className="col-span-2 space-y-1">
+                        <label className="block text-[9px] uppercase tracking-wider font-bold text-text-dark/80">Change Subscription Plan</label>
                         <select
                           value={u.plan}
                           onChange={(e) => handleUpdatePlan(u.id, e.target.value)}
-                          className="bg-background border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none cursor-pointer"
+                          className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary focus:outline-none cursor-pointer"
                         >
-                          <option value="Free">Free</option>
-                          <option value="Pro">Pro ($49)</option>
-                          <option value="Enterprise">Enterprise ($249)</option>
+                          <option value="Free">Free Plan</option>
+                          <option value="Pro">Pro Plan ($49)</option>
+                          <option value="Enterprise">Enterprise Plan ($249)</option>
                         </select>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      </div>
+                    </div>
+
+                    {/* Actions button bar */}
+                    <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-border/30">
+                      <button
+                        onClick={() => handleToggleBan(u.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                           u.isBanned 
-                            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" 
-                            : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                        }`}>
-                          {u.isBanned ? "Suspended / Banned" : "Active"}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-text-muted font-mono">{u.joinedAt}</td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleToggleBan(u.id)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded bg-background text-rose-500 hover:bg-rose-500/10 border border-border text-[10px] font-semibold transition cursor-pointer"
-                          >
-                            <Ban className="h-3 w-3" />
-                            {u.isBanned ? "Lift Ban" : "Ban Account"}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="p-1 text-text-dark hover:text-rose-500 transition cursor-pointer"
-                            title="Delete User permanently"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                            ? "bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                            : "bg-rose-500/5 hover:bg-rose-500/15 text-rose-400 border-rose-500/20"
+                        }`}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                        <span>{u.isBanned ? "Lift Ban" : "Ban Account"}</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(u.id)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-background hover:bg-rose-500/10 text-rose-500 border border-border text-[10px] font-bold transition cursor-pointer"
+                        title="Delete User permanently"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* SEARCH LOGS AND AUDITS ARE CONSOLIDATED INSIDE THE NOTIFICATIONS TAB */}
@@ -712,7 +785,7 @@ export default function AdminPanel() {
             <div className="space-y-5 animate-fade-in font-sans">
               
               {/* Sub-tab selection menu */}
-              <div className="flex border border-border bg-card/60 p-1 rounded-xl overflow-x-auto scrollbar-none w-fit gap-1 shadow-sm">
+              <div className="flex flex-wrap border border-border bg-card/60 p-1 rounded-xl w-full sm:w-fit gap-1 shadow-sm">
                 {[
                   { id: "broadcast", label: "Broadcast Alerts & Emails" },
                   { id: "logs", label: "Search Logs Monitor" },
@@ -721,7 +794,7 @@ export default function AdminPanel() {
                   <button
                     key={sTab.id}
                     onClick={() => setNotifSubTab(sTab.id as any)}
-                    className={`py-1.5 px-4 text-[10px] uppercase font-bold rounded-lg transition cursor-pointer whitespace-nowrap ${
+                    className={`py-1.5 px-3 flex-1 sm:flex-none text-[9px] sm:text-[10px] uppercase font-bold rounded-lg transition cursor-pointer text-center whitespace-nowrap ${
                       notifSubTab === sTab.id
                         ? "bg-primary text-[#0B0B0C] shadow-md"
                         : "text-text-muted hover:text-text-primary hover:bg-card-hover/20"
@@ -945,40 +1018,75 @@ export default function AdminPanel() {
                             <div className="border-t border-border bg-card/40 p-4 space-y-3 animate-fade-in">
                               <h4 className="text-[10px] uppercase font-bold text-primary tracking-wider">Leads Found in this Search:</h4>
                               {log.leads && log.leads.length > 0 ? (
-                                <div className="overflow-x-auto rounded border border-border/60">
-                                  <table className="w-full text-left border-collapse text-[11px]">
-                                    <thead>
-                                      <tr className="bg-background border-b border-border text-text-muted font-medium">
-                                        <th className="py-2 px-3">Lead Business Name</th>
-                                        <th className="py-2 px-3">Phone</th>
-                                        <th className="py-2 px-3">Email Address</th>
-                                        <th className="py-2 px-3">Website</th>
-                                        <th className="py-2 px-3 text-center">Score</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/40 bg-card/20">
-                                      {log.leads.map((l: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-card-hover/20">
-                                          <td className="py-2 px-3 font-semibold text-text-primary">{l.businessName}</td>
-                                          <td className="py-2 px-3 text-text-muted font-mono">{l.phoneNumber || "None"}</td>
-                                          <td className="py-2 px-3 text-text-muted font-mono">{l.email || "None"}</td>
-                                          <td className="py-2 px-3 text-primary">
-                                            {l.website ? (
-                                              <a href={l.website} target="_blank" rel="noreferrer" className="hover:underline">
-                                                {l.website.replace("https://www.", "").replace("http://www.", "")}
-                                              </a>
-                                            ) : "None"}
-                                          </td>
-                                          <td className="py-2 px-3 text-center">
-                                            <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                                              {l.leadScore}
-                                            </span>
-                                          </td>
+                                <>
+                                  {/* Desktop view */}
+                                  <div className="hidden md:block overflow-x-auto rounded border border-border/60">
+                                    <table className="w-full text-left border-collapse text-[11px]">
+                                      <thead>
+                                        <tr className="bg-background border-b border-border text-text-muted font-medium">
+                                          <th className="py-2 px-3">Lead Business Name</th>
+                                          <th className="py-2 px-3">Phone</th>
+                                          <th className="py-2 px-3">Email Address</th>
+                                          <th className="py-2 px-3">Website</th>
+                                          <th className="py-2 px-3 text-center">Score</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
+                                      </thead>
+                                      <tbody className="divide-y divide-border/40 bg-card/20">
+                                        {log.leads.map((l: any, idx: number) => (
+                                          <tr key={idx} className="hover:bg-card-hover/20">
+                                            <td className="py-2 px-3 font-semibold text-text-primary">{l.businessName}</td>
+                                            <td className="py-2 px-3 text-text-muted font-mono">{l.phoneNumber || "None"}</td>
+                                            <td className="py-2 px-3 text-text-muted font-mono">{l.email || "None"}</td>
+                                            <td className="py-2 px-3 text-primary">
+                                              {l.website ? (
+                                                <a href={l.website} target="_blank" rel="noreferrer" className="hover:underline">
+                                                  {l.website.replace("https://www.", "").replace("http://www.", "")}
+                                                </a>
+                                              ) : "None"}
+                                            </td>
+                                            <td className="py-2 px-3 text-center">
+                                              <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                                                {l.leadScore}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  {/* Mobile View */}
+                                  <div className="block md:hidden space-y-2.5">
+                                    {log.leads.map((l: any, idx: number) => (
+                                      <div key={idx} className="bg-background border border-border/50 rounded-lg p-3 space-y-2 text-[11px]">
+                                        <div className="flex justify-between items-start gap-2 border-b border-border/30 pb-1.5">
+                                          <span className="font-extrabold text-text-primary">{l.businessName}</span>
+                                          <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold text-[9px] shrink-0">
+                                            Score: {l.leadScore}
+                                          </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1.5 text-text-muted">
+                                          <div>
+                                            <span className="text-[9px] uppercase text-text-dark font-bold block">Phone</span>
+                                            <span className="font-mono text-text-primary">{l.phoneNumber || "None"}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[9px] uppercase text-text-dark font-bold block">Email</span>
+                                            <span className="font-mono text-text-primary truncate max-w-[120px] block" title={l.email}>{l.email || "None"}</span>
+                                          </div>
+                                          <div className="col-span-2">
+                                            <span className="text-[9px] uppercase text-text-dark font-bold block">Website</span>
+                                            {l.website ? (
+                                              <a href={l.website} target="_blank" rel="noreferrer" className="text-primary hover:underline font-mono truncate block max-w-[260px]">
+                                                {l.website}
+                                              </a>
+                                            ) : <span className="text-text-primary">None</span>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
                               ) : (
                                 <p className="text-[11px] text-text-muted italic">No leads stored in this search payload.</p>
                               )}

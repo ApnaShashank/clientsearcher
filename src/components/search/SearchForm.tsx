@@ -11,7 +11,7 @@ interface SearchFormProps {
 
 export default function SearchForm({ onSearchComplete }: SearchFormProps) {
   const { searchParams, setSearchParams, executeSearch, isSearching, currentUser, filters } = useAppStore();
-  const [isLiveSearch, setIsLiveSearch] = useState(false);
+  const [isLiveSearch, setIsLiveSearch] = useState(true);
   const [searchError, setSearchError] = useState("");
   
   // Suggestion focus/active states

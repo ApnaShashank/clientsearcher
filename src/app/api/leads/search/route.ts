@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
     await syncState();
     const body = await request.json();
     const { 
-      country = "United States", 
-      state = "", 
-      city = "New York City", 
-      category = "Dental Clinic", 
+      country = "India", 
+      state = "Karnataka", 
+      city = "Bengaluru", 
+      category = "Restaurant", 
       customCategory = "", 
       limit = 10,
       userId = "anonymous",
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         filterInstructions += "\n- Ensure ALL businesses have a listed business email address.";
       }
     } else {
+      filterInstructions += "\n- Since the user's primary focus is finding clients who need a website, make sure at least 60-70% of the returned leads do NOT have a website (set website: \"\" and websiteStatus: \"No Website\" and seoScore: 0). For the remaining leads that do have websites, ensure they have outdated/poor websites (low SEO score under 65, slow website status, or missing SSL secure encryption).";
       filterInstructions += "\n- Generate a natural, diverse mix of review counts. Include both small businesses (e.g., 5 to 15 reviews) and larger established ones.";
     }
 
@@ -120,6 +121,8 @@ export async function POST(request: NextRequest) {
     // Call OpenAI GPT-4o-mini to generate/enrich structured Lead objects
     const systemPrompt = `You are a B2B Lead Generation engine (Seed: ${randomSeed}). Your task is to output a JSON array of high-quality business leads matching the user's request.
 ${searchContext ? `Use the following search context as a reference to include REAL businesses: ${searchContext}` : `Since no search context is available, generate highly realistic local businesses in the requested area.`}
+
+CRITICAL BUSINESS REQUIREMENT: The user is a web developer looking for clients who need a website. Therefore, prioritize finding and generating businesses that do NOT have a website (website: ""). Unless the user's search filters explicitly request "Has Website" (hasWebsite: true), make sure that at least 60-70% of the returned leads have no website (website: "") and a websiteStatus of "No Website". For the remaining businesses that do have websites, make sure their websites have a low SEO score (under 65) or missing SSL, making them good targets for a redesign proposal.
 
 You must return EXACTLY a JSON array of ${limit} Lead objects. Do NOT wrap in markdown formatting (like \`\`\`json). Output raw JSON string only.
 

@@ -34,11 +34,14 @@ export default function DashboardPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   // Seed default results on first load
+  const [hasSeeded, setHasSeeded] = useState(false);
+
   useEffect(() => {
-    if (mounted && searchResults.length === 0) {
+    if (mounted && !hasSeeded && searchResults.length === 0) {
+      setHasSeeded(true);
       executeSearch();
     }
-  }, [mounted, executeSearch, searchResults]);
+  }, [mounted, hasSeeded, executeSearch, searchResults]);
 
   if (!mounted) {
     return (

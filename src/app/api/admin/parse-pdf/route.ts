@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as pdf from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 
 export const maxDuration = 30;
 
@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Parse PDF text using pdf-parse safely
-    const pdfParser = (pdf as any).default || pdf;
-    const pdfData = await pdfParser(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const pdfData = await parser.getText();
     const text = pdfData.text || "";
 
     // Extract leads using patterns from the text

@@ -71,9 +71,17 @@ export async function POST(request: NextRequest) {
 
     if (action === "markAllRead") {
       const { recipientId } = payload;
+      const isAdmin = recipientId === "admin";
+      
       serverState.systemNotifications.forEach((n) => {
-        if (n.recipientId === recipientId || (recipientId === "admin" && n.recipientId === "admin")) {
-          n.read = true;
+        if (isAdmin) {
+          if (n.recipientId === "admin" || n.recipientId === "all") {
+            n.read = true;
+          }
+        } else {
+          if (n.recipientId === recipientId || n.recipientId === "all") {
+            n.read = true;
+          }
         }
       });
       await saveState("systemNotifications");

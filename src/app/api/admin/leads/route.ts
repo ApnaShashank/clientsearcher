@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import {
-  getAllLeads,
-  getLeadByPhone,
-  insertLeads,
-  makeId,
-} from "@/lib/repo";
+import { getCollection, stripMongoId } from "@/lib/db";
+import { getLeadByPhone, insertLeads, makeId } from "@/lib/repo";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { logActivity } from "@/lib/activity";
 import { Lead } from "@/types/crm";
@@ -22,29 +18,85 @@ export async function GET(request: NextRequest) {
   const service = searchParams.get("service")?.trim() || "";
   const priority = searchParams.get("priority")?.trim() || "";
   const status = searchParams.get("status")?.trim() || "";
-  const assignedFilter = searchParams.get("assigned")?.trim() || ""; // "assigned" | "unassigned"
-  const q = searchParams.get("q")?.trim().toLowerCase() || "";
+  const assignedFilter = searchParams.get("assigned")?.trim() || "";
+  const q = searchParams.get("q")?.trim() || "";
 
-  let leads = await getAllLeads();
+  const page = Math.max(1, Number(searchParams.get("page") || 1));
+  const limit = Math.min(200, Math.max(1, Number(searchParams.get("limit") || 25)));
 
-  leads = leads.filter((l) => {
-    if (city && l.city !== city) return false;
-    if (area && !l.area.toLowerCase().includes(area)) return false;
-    if (category && l.category !== category) return false;
-    if (websiteStatus && l.websiteStatus !== websiteStatus) return false;
-    if (service && !l.servicesToPitch.includes(service)) return false;
-    if (priority && l.priority !== priority) return false;
-    if (status && l.status !== status) return false;
-    if (assignedFilter === "unassigned" && l.status !== "Unassigned") return false;
-    if (assignedFilter === "assigned" && !l.assignedTo) return false;
+  const { col, memory } = await getCollection<Lead>("leads");
+
+  if (col) {
+    const query: Record<string, unknown> = {};
+    if (city) query.city = city;
+    if (area) query.area = { $regex: area, $options: "i" };
+    if (category) query.category = category;
+    if (websiteStatus) query.websiteStatus = websiteStatus;
+    if (service) query.servicesToPitch = service;
+    if (priority) query.priority = priority;
+    if (status) query.status = status;
+    if (assignedFilter === "unassigned") query.status = "Unassigned";
+    if (assignedFilter === "assigned") query.assignedTo = { $ne: null };
     if (q) {
-      const hay = `${l.businessName} ${l.phone} ${l.ownerName || ""} ${l.area} ${l.city}`.toLowerCase();
-      if (!hay.includes(q)) return false;
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.$or = [
+        { businessName: { $regex: escaped, $options: "i" } },
+        { phone: { $regex: escaped, $options: "i" } },
+        { ownerName: { $regex: escaped, $options: "i" } },
+        { area: { $regex: escaped, $options: "i" } },
+        { city: { $regex: escaped, $options: "i" } },
+      ];
     }
-    return true;
-  });
 
-  return NextResponse.json({ leads });
+    const [total, docs] = await Promise.all([
+      col.countDocuments(query),
+      col
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray(),
+    ]);
+
+    return NextResponse.json({
+      leads: docs.map((d) => stripMongoId(d) as Lead),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  }
+
+  // In-memory fallback
+  const qLower = q.toLowerCase();
+  const filtered = memory.leads
+    .filter((l) => {
+      if (city && l.city !== city) return false;
+      if (area && !l.area.toLowerCase().includes(area)) return false;
+      if (category && l.category !== category) return false;
+      if (websiteStatus && l.websiteStatus !== websiteStatus) return false;
+      if (service && !l.servicesToPitch.includes(service)) return false;
+      if (priority && l.priority !== priority) return false;
+      if (status && l.status !== status) return false;
+      if (assignedFilter === "unassigned" && l.status !== "Unassigned") return false;
+      if (assignedFilter === "assigned" && !l.assignedTo) return false;
+      if (qLower) {
+        const hay = `${l.businessName} ${l.phone} ${l.ownerName || ""} ${l.area} ${l.city}`.toLowerCase();
+        if (!hay.includes(qLower)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const total = filtered.length;
+  const leads = filtered.slice((page - 1) * limit, page * limit);
+  return NextResponse.json({
+    leads,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
 }
 
 export async function POST(request: NextRequest) {

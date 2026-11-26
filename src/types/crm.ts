@@ -101,7 +101,18 @@ export interface CallLog {
   durationFeel?: DurationFeel;
 }
 
-export type BatchStatus = "Scheduled" | "Live" | "Completed";
+export type BatchStatus = "Scheduled" | "Live" | "Completed" | "Recalled";
+
+export interface AppNotification {
+  id: string;
+  recipientId: string; // "admin" or caller userId
+  title: string;
+  message: string;
+  type: "batch" | "followup" | "outcome" | "alert";
+  entityId?: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export interface Batch {
   id: string;

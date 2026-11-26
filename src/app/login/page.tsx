@@ -4,9 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, User } from "lucide-react";
+import { Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,18 +28,23 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        const msg = data.error || "Login failed";
+        setError(msg);
+        toast.error(msg);
         setLoading(false);
         return;
       }
 
+      toast.success(`Welcome back, ${data.user?.name || "User"}!`);
       if (data.user?.role === "admin") {
         router.push("/admin");
       } else {
         router.push("/caller");
       }
     } catch {
-      setError("Network error. Please try again.");
+      const msg = "Network error. Please try again.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   }
@@ -106,8 +114,17 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full btn-pill-dark py-3.5 text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <span>{loading ? "Signing in..." : "Sign In"}</span>
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <>
+                <Spinner className="w-4 h-4" />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

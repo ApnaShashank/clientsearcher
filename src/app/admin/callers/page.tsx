@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
 import { AppSettings, PublicUser } from "@/types/crm";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton, Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 interface CallerWithStats extends PublicUser {
   stats: {
@@ -18,10 +20,12 @@ interface CallerWithStats extends PublicUser {
 
 export default function AdminCallersPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { data: settingsData } = useQuery<{ settings: AppSettings }>({
     queryKey: ["crm-settings"],
     queryFn: async () => (await fetch("/api/settings")).json(),
+    staleTime: 5 * 60_000,
   });
   const settings = settingsData?.settings;
 
@@ -30,6 +34,7 @@ export default function AdminCallersPage() {
   }>({
     queryKey: ["admin-callers"],
     queryFn: async () => (await fetch("/api/admin/callers")).json(),
+    staleTime: 5 * 60_000,
   });
 
   const [showCreate, setShowCreate] = useState(false);
@@ -43,8 +48,10 @@ export default function AdminCallersPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [resetId, setResetId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
 
   function toggleCategory(cat: string) {
     setPreferredCategories((prev) =>
@@ -75,7 +82,9 @@ export default function AdminCallersPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to create caller");
+        const msg = data.error || "Failed to create caller";
+        setError(msg);
+        toast.error(msg);
       } else {
         setShowCreate(false);
         setName("");
@@ -85,33 +94,57 @@ export default function AdminCallersPage() {
         setWorkingAreas("");
         setPreferredCategories([]);
         queryClient.invalidateQueries({ queryKey: ["admin-callers"] });
+        toast.success(`Caller "${data.caller.name}" created`);
       }
+    } catch {
+      toast.error("Network error while creating caller");
     } finally {
       setSaving(false);
     }
   }
 
   async function toggleActive(caller: CallerWithStats) {
-    await fetch(`/api/admin/callers/${caller.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !caller.isActive }),
-    });
-    queryClient.invalidateQueries({ queryKey: ["admin-callers"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+    setTogglingId(caller.id);
+    try {
+      const res = await fetch(`/api/admin/callers/${caller.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !caller.isActive }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to update caller status");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-callers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+      toast.success(
+        `${caller.name} ${caller.isActive ? "deactivated" : "activated"}`
+      );
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
     if (!resetId || !newPassword.trim()) return;
-    await fetch(`/api/admin/callers/${resetId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newPassword: newPassword.trim() }),
-    });
-    setResetId(null);
-    setNewPassword("");
-    alert("Password updated.");
+    setResetBusy(true);
+    try {
+      const res = await fetch(`/api/admin/callers/${resetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPassword.trim() }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to reset password");
+        return;
+      }
+      setResetId(null);
+      setNewPassword("");
+      toast.success("Password updated successfully");
+    } finally {
+      setResetBusy(false);
+    }
   }
 
   const callers = callersData?.callers || [];
@@ -239,18 +272,20 @@ export default function AdminCallersPage() {
             <button
               type="submit"
               disabled={saving}
-              className="btn-pill-dark px-5 py-2 text-sm"
+              className="btn-pill-dark px-5 py-2 text-sm inline-flex items-center gap-2 disabled:opacity-60"
             >
+              {saving && <Spinner className="w-4 h-4" />}
               {saving ? "Creating..." : "Create Caller"}
             </button>
           </div>
         </form>
       )}
 
-      {/* Callers Grid */}
       {isLoading ? (
-        <div className="crm-card p-8 text-center text-sm text-[#737370]">
-          Loading callers...
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 w-full rounded-3xl" />
+          ))}
         </div>
       ) : callers.length === 0 ? (
         <div className="crm-card p-10 text-center text-sm text-[#737370]">
@@ -303,22 +338,22 @@ export default function AdminCallersPage() {
 
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#F2F2EE]">
                 <button
+                  disabled={togglingId === c.id}
                   onClick={() => toggleActive(c)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 disabled:opacity-50 ${
                     c.isActive
                       ? "bg-[#FEECEC] text-[#C92A2A]"
                       : "bg-[#E6F9EE] text-[#12804A]"
                   }`}
                 >
-                  {c.isActive ? (
-                    <>
-                      <ShieldOff className="w-3.5 h-3.5" /> Deactivate
-                    </>
+                  {togglingId === c.id ? (
+                    <Spinner className="w-3.5 h-3.5" />
+                  ) : c.isActive ? (
+                    <ShieldOff className="w-3.5 h-3.5" />
                   ) : (
-                    <>
-                      <ShieldCheck className="w-3.5 h-3.5" /> Activate
-                    </>
+                    <ShieldCheck className="w-3.5 h-3.5" />
                   )}
+                  {c.isActive ? "Deactivate" : "Activate"}
                 </button>
                 <button
                   onClick={() => {
@@ -360,8 +395,13 @@ export default function AdminCallersPage() {
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-pill-dark px-4 py-2 text-xs">
-                Update Password
+              <button
+                type="submit"
+                disabled={resetBusy}
+                className="btn-pill-dark px-4 py-2 text-xs inline-flex items-center gap-1.5 disabled:opacity-60"
+              >
+                {resetBusy && <Spinner className="w-3.5 h-3.5" />}
+                {resetBusy ? "Updating..." : "Update Password"}
               </button>
             </div>
           </form>

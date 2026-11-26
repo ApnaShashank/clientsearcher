@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Download, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 interface PreviewResponse {
   mode: string;
@@ -17,19 +19,11 @@ interface PreviewResponse {
     phone: string;
     reason: string;
   }[];
-  previewValid: {
-    id: string;
-    businessName: string;
-    category: string;
-    city: string;
-    area: string;
-    phone: string;
-    websiteStatus: string;
-  }[];
 }
 
 export default function ImportLeadsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [leadSource, setLeadSource] = useState<"Excel Import" | "Notion Import">(
     "Excel Import"
@@ -56,12 +50,17 @@ export default function ImportLeadsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Validation failed");
+        const msg = data.error || "Validation failed";
+        setError(msg);
+        toast.error(msg);
       } else {
         setPreview(data);
+        toast.info(`Validated ${data.totalRows} rows: ${data.validCount} valid`);
       }
     } catch {
-      setError("Failed to parse file.");
+      const msg = "Failed to parse file.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -82,15 +81,20 @@ export default function ImportLeadsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Import failed");
+        const msg = data.error || "Import failed";
+        setError(msg);
+        toast.error(msg);
       } else {
         setSavedCount(data.validCount);
         setPreview(data);
         queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
         queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+        toast.success(`Imported ${data.validCount} leads successfully!`);
       }
     } catch {
-      setError("Failed to import leads.");
+      const msg = "Failed to import leads.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -174,14 +178,13 @@ export default function ImportLeadsPage() {
           disabled={!file || loading}
           className="btn-pill-dark px-5 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-50"
         >
-          <Upload className="w-4 h-4" />
+          {loading ? <Spinner className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
           {loading ? "Checking..." : "Validate & Preview"}
         </button>
       </form>
 
       {preview && (
         <div className="space-y-5">
-          {/* Summary */}
           <div className="grid grid-cols-3 gap-4">
             <div className="crm-card p-5">
               <div className="text-xs text-[#737370]">Total Rows</div>
@@ -209,8 +212,9 @@ export default function ImportLeadsPage() {
               <button
                 onClick={handleCommit}
                 disabled={loading}
-                className="btn-pill-orange px-6 py-2.5 text-sm"
+                className="btn-pill-orange px-6 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-50"
               >
+                {loading && <Spinner className="w-4 h-4" />}
                 {loading ? "Saving..." : `Save ${preview.validCount} Leads`}
               </button>
             </div>

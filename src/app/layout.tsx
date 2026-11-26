@@ -6,13 +6,18 @@ export const metadata: Metadata = {
   title: "Creightweb Calling CRM",
   description:
     "Mobile-first telecalling CRM for Creightweb — smart lead assignment, one-tap calling, and full tracking.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#F5F5F3",
+  themeColor: "#FF5C1C",
 };
 
 export default function RootLayout({

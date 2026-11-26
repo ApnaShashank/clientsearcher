@@ -23,6 +23,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface MetricsResponse {
   kpis: {
@@ -61,7 +62,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to load metrics");
       return res.json();
     },
-    refetchInterval: 30_000,
+    staleTime: 30_000,
   });
 
   const kpis = data?.kpis;
@@ -167,9 +168,15 @@ export default function AdminDashboardPage() {
                   }`}
                 />
               </div>
-              <div className="text-3xl font-bold tracking-tight">
-                {isLoading ? "—" : c.value}
-              </div>
+              {isLoading ? (
+                <Skeleton
+                  className={`h-9 w-16 ${c.accent ? "bg-white/25" : ""}`}
+                />
+              ) : (
+                <div className="text-3xl font-bold tracking-tight">
+                  {c.value}
+                </div>
+              )}
             </Link>
           );
         })}
@@ -177,7 +184,6 @@ export default function AdminDashboardPage() {
 
       {/* Chart + Per-caller today table */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* 14-day calls chart */}
         <div className="lg:col-span-7 crm-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -193,48 +199,52 @@ export default function AdminDashboardPage() {
               Full Report <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data?.chart14Days || []}
-                margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#EFEFEA" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 11, fill: "#737370" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 11, fill: "#737370" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "16px",
-                    border: "1px solid #EBEBE7",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar
-                  dataKey="calls"
-                  name="Total Calls"
-                  fill="#111111"
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar
-                  dataKey="interested"
-                  name="Interested / Won"
-                  fill="#FF5C1C"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-72 w-full" />
+          ) : (
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data?.chart14Days || []}
+                  margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EFEFEA" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "#737370" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "#737370" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "1px solid #EBEBE7",
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar
+                    dataKey="calls"
+                    name="Total Calls"
+                    fill="#111111"
+                    radius={[6, 6, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="interested"
+                    name="Interested / Won"
+                    fill="#FF5C1C"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Per-caller table for today */}
@@ -255,7 +265,13 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="overflow-x-auto flex-1">
-            {!data?.callerToday || data.callerToday.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : !data?.callerToday || data.callerToday.length === 0 ? (
               <div className="py-12 text-center text-sm text-[#737370]">
                 No callers added yet.{" "}
                 <Link href="/admin/callers" className="text-[#FF5C1C] font-medium underline">

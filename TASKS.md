@@ -35,3 +35,11 @@
 ## Phase 5: Polish, Verification & Build
 - [x] **5.1 Environment & docs**: Updated `.env.example` with `MONGODB_URI`, `JWT_SECRET`, and `ADMIN_USERNAME`/`ADMIN_PASSWORD`.
 - [x] **5.2 Build & typecheck verification**: `tsc --noEmit` and `npx next build --webpack` passed with 0 errors across all 36 app/API routes.
+
+## Phase 6: Recall, Performance, Responsive Caller, PWA & Notifications
+- [x] **6.1 Recall uncalled leads (Admin)**: Implemented `POST /api/admin/leads/recall`, single & bulk recall on `/admin/leads`, batch detail drawer & "Recall all uncalled" on `/admin/batches`, blocking already-called leads, updating empty batches to `Recalled`, and logging activity.
+- [x] **6.2 Performance & indexes**: Upgraded `/api/admin/metrics` to single MongoDB `$facet` aggregations, added MongoDB indexes on `leads`, `callLogs`, `batches`, and `notifications`, added server pagination on leads/batches/history, configured React Query `staleTime`, and added exact-shape skeletons.
+- [x] **6.3 Visible button feedback**: Added global `ToastProvider` (`useToast`) and `Spinner` across all Admin & Caller buttons and forms (login, import, batch assign, recall, recycle, add lead, callers, tasks, settings, outcomes, report downloads).
+- [x] **6.4 Responsive Caller app (desktop/laptop)**: Updated `CallerShell` and Caller pages with wide centered desktop layouts (`lg:max-w-6xl`, horizontal nav pills, 2-column Today queue + card, multi-column Follow-ups/Stats/Report) while keeping 390px mobile intact.
+- [x] **6.5 PWA "Download App"**: Added `manifest.webmanifest`, `icon-192.png`, `icon-512.png`, `sw.js` offline shell, and `DownloadAppButton` in both Admin and Caller panels.
+- [x] **6.6 In-app Notifications (both panels)**: Added `notifications` MongoDB collection, server-side event triggers (batch assigned/live/completed, due follow-ups, high-value outcomes, 24h untouched alert), `/api/notifications`, and `NotificationBell` in both headers.

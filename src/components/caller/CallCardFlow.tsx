@@ -19,6 +19,8 @@ import {
   Lead,
 } from "@/types/crm";
 import { formatWhatsAppLink } from "@/lib/phone";
+import { Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 export interface CallerLeadItem extends Lead {
   pitchHint: string;
@@ -32,6 +34,7 @@ export function CallCardFlow({
   lead: CallerLeadItem;
   onSaved: () => void;
 }) {
+  const toast = useToast();
   const [showAddress, setShowAddress] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<CallOutcome | null>(
     null
@@ -45,7 +48,9 @@ export function CallCardFlow({
   async function handleSaveOutcome() {
     if (!selectedOutcome) return;
     if (selectedOutcome === "Callback" && !followUpDate) {
-      setError("Please pick a follow-up date for Callback.");
+      const msg = "Please pick a follow-up date for Callback.";
+      setError(msg);
+      toast.error(msg);
       return;
     }
     setError("");
@@ -63,10 +68,13 @@ export function CallCardFlow({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Could not save outcome");
+        const msg = data.error || "Could not save outcome";
+        setError(msg);
+        toast.error(msg);
         setSaving(false);
         return;
       }
+      toast.success(`Saved: ${selectedOutcome}`);
       setSelectedOutcome(null);
       setNote("");
       setFollowUpDate("");
@@ -74,7 +82,9 @@ export function CallCardFlow({
       setShowAddress(false);
       onSaved();
     } catch {
-      setError("Network error. Please try again.");
+      const msg = "Network error. Please try again.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -89,18 +99,19 @@ export function CallCardFlow({
   return (
     <div className="space-y-4">
       {/* Main Lead Card */}
-      <div className="crm-card p-5 space-y-4">
+      <div className="crm-card p-5 lg:p-6 space-y-4">
         <div className="flex items-start justify-between gap-2">
           <div>
             <span className="inline-block text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#F5F5F3] text-[#737370] mb-1.5">
               {lead.category}
             </span>
-            <h2 className="text-xl font-bold leading-snug text-[#111111]">
+            <h2 className="text-xl lg:text-2xl font-bold leading-snug text-[#111111]">
               {lead.businessName}
             </h2>
             <p className="text-sm text-[#737370] mt-0.5">
               {lead.area ? `${lead.area}, ` : ""}
               {lead.city}
+              {lead.ownerName ? ` · ${lead.ownerName}` : ""}
             </p>
           </div>
           {lead.googleRating && (
@@ -114,7 +125,7 @@ export function CallCardFlow({
         {/* One-line Pitch Hint */}
         <div className="bg-[#FFF0EA] border border-[#FFD9C8] rounded-2xl p-3.5 flex items-start gap-2.5">
           <Sparkles className="w-4 h-4 text-[#FF5C1C] shrink-0 mt-0.5" />
-          <p className="text-xs font-semibold text-[#111111] leading-relaxed">
+          <p className="text-xs lg:text-sm font-semibold text-[#111111] leading-relaxed">
             {lead.pitchHint}
           </p>
         </div>
@@ -132,7 +143,7 @@ export function CallCardFlow({
             <button
               type="button"
               onClick={() => setShowAddress((v) => !v)}
-              className="text-xs font-medium text-[#737370] inline-flex items-center gap-1"
+              className="text-xs font-medium text-[#737370] inline-flex items-center gap-1 hover:text-[#111111]"
             >
               <MapPin className="w-3.5 h-3.5" />
               <span>{showAddress ? "Hide address" : "Show full address"}</span>
@@ -172,12 +183,12 @@ export function CallCardFlow({
       </div>
 
       {/* One-Tap Outcome Card */}
-      <div className="crm-card p-5 space-y-4">
+      <div className="crm-card p-5 lg:p-6 space-y-4">
         <h3 className="text-sm font-bold text-[#111111]">
           After the call — tap outcome:
         </h3>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {CALL_OUTCOMES.map((outcome) => {
             const active = selectedOutcome === outcome;
             return (
@@ -191,7 +202,7 @@ export function CallCardFlow({
                 className={`py-3 px-3 rounded-2xl text-xs font-semibold border transition-all text-center ${
                   active
                     ? "bg-[#111111] text-white border-[#111111] shadow-sm"
-                    : "bg-[#F9F9F7] text-[#111111] border-[#E8E8E4] active:scale-[0.98]"
+                    : "bg-[#F9F9F7] text-[#111111] border-[#E8E8E4] hover:border-[#111111] active:scale-[0.98]"
                 }`}
               >
                 {outcome}
@@ -264,8 +275,17 @@ export function CallCardFlow({
               onClick={handleSaveOutcome}
               className="w-full btn-pill-dark py-3.5 text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              <Check className="w-4 h-4" />
-              <span>{saving ? "Saving..." : "Save & Next Lead"}</span>
+              {saving ? (
+                <>
+                  <Spinner className="w-4 h-4" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Save &amp; Next Lead</span>
+                </>
+              )}
             </button>
           </div>
         )}

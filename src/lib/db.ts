@@ -8,6 +8,7 @@ import {
   AdminTask,
   ActivityLog,
   AppSettings,
+  AppNotification,
   DEFAULT_CITIES,
   DEFAULT_CATEGORIES,
   DEFAULT_SERVICES_TO_PITCH,
@@ -22,6 +23,7 @@ export interface InMemoryStore {
   batches: Batch[];
   adminTasks: AdminTask[];
   activities: ActivityLog[];
+  notifications: AppNotification[];
   settings: AppSettings;
   seeded: boolean;
 }
@@ -43,6 +45,7 @@ function getMemoryStore(): InMemoryStore {
       batches: [],
       adminTasks: [],
       activities: [],
+      notifications: [],
       settings: {
         id: "default",
         cities: [...DEFAULT_CITIES],
@@ -77,14 +80,23 @@ export async function connectToDb(): Promise<Db | null> {
 async function ensureIndexes(db: Db) {
   if (global.__creightwebIndexesReady) return;
   try {
-    await db.collection("leads").createIndex({ phone: 1 }, { unique: true });
-    await db.collection("leads").createIndex({ assignedTo: 1, status: 1 });
-    await db.collection("leads").createIndex({ city: 1, area: 1, category: 1 });
-    await db.collection("users").createIndex({ username: 1 }, { unique: true });
-    await db.collection("callLogs").createIndex({ callerId: 1, calledAt: -1 });
-    await db.collection("callLogs").createIndex({ leadId: 1, calledAt: -1 });
-    await db.collection("batches").createIndex({ callerId: 1, visibleFrom: -1 });
-    await db.collection("activities").createIndex({ timestamp: -1 });
+    await Promise.all([
+      db.collection("leads").createIndex({ phone: 1 }, { unique: true }),
+      db.collection("leads").createIndex({ status: 1 }),
+      db.collection("leads").createIndex({ assignedTo: 1, status: 1 }),
+      db.collection("leads").createIndex({ batchId: 1 }),
+      db.collection("leads").createIndex({ city: 1, category: 1 }),
+      db.collection("leads").createIndex({ createdAt: -1 }),
+      db.collection("users").createIndex({ username: 1 }, { unique: true }),
+      db.collection("callLogs").createIndex({ callerId: 1, calledAt: -1 }),
+      db.collection("callLogs").createIndex({ leadId: 1, calledAt: -1 }),
+      db.collection("callLogs").createIndex({ calledAt: -1 }),
+      db.collection("batches").createIndex({ callerId: 1, visibleFrom: -1 }),
+      db.collection("batches").createIndex({ createdAt: -1 }),
+      db.collection("activities").createIndex({ timestamp: -1 }),
+      db.collection("notifications").createIndex({ recipientId: 1, createdAt: -1 }),
+      db.collection("notifications").createIndex({ recipientId: 1, isRead: 1 }),
+    ]);
     global.__creightwebIndexesReady = true;
   } catch (err) {
     console.error("Index creation warning:", err);
@@ -187,7 +199,15 @@ export function stripMongoId<T extends Document>(doc: T): Omit<T, "_id"> {
 }
 
 export async function getCollection<T extends Document>(
-  name: "leads" | "users" | "callLogs" | "batches" | "adminTasks" | "activities" | "settings"
+  name:
+    | "leads"
+    | "users"
+    | "callLogs"
+    | "batches"
+    | "adminTasks"
+    | "activities"
+    | "notifications"
+    | "settings"
 ): Promise<{ col: Collection<T> | null; memory: InMemoryStore }> {
   await ensureSeeded();
   const db = await connectToDb();

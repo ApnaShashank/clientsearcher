@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save } from "lucide-react";
+import { Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 import {
   AppSettings,
   LEAD_PRIORITIES,
@@ -17,10 +19,12 @@ import {
 export default function AddLeadPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const { data: settingsData } = useQuery<{ settings: AppSettings }>({
     queryKey: ["crm-settings"],
     queryFn: async () => (await fetch("/api/settings")).json(),
+    staleTime: 5 * 60_000,
   });
   const settings = settingsData?.settings;
 
@@ -96,15 +100,20 @@ export default function AddLeadPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to save lead");
+        const msg = data.error || "Failed to save lead";
+        setError(msg);
+        toast.error(msg);
         setSaving(false);
         return;
       }
+      toast.success("Lead saved successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
       queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
       router.push("/admin/leads");
     } catch {
-      setError("Network error while saving lead.");
+      const msg = "Network error while saving lead.";
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }
@@ -478,7 +487,7 @@ export default function AddLeadPage() {
             disabled={saving}
             className="btn-pill-dark px-6 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-60"
           >
-            <Save className="w-4 h-4" />
+            {saving ? <Spinner className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saving ? "Saving..." : "Save Lead"}
           </button>
         </div>

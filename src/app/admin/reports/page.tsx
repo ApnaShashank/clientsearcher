@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { CallLog, PublicUser } from "@/types/crm";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton, Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 interface ReportResponse {
   overall: {
@@ -30,6 +32,7 @@ interface ReportResponse {
 }
 
 export default function AdminReportsPage() {
+  const toast = useToast();
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 6 * 86400_000)
     .toISOString()
@@ -38,10 +41,14 @@ export default function AdminReportsPage() {
   const [from, setFrom] = useState(weekAgo);
   const [to, setTo] = useState(today);
   const [callerId, setCallerId] = useState("");
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(
+    null
+  );
 
   const { data: callersData } = useQuery<{ callers: PublicUser[] }>({
     queryKey: ["admin-callers"],
     queryFn: async () => (await fetch("/api/admin/callers")).json(),
+    staleTime: 5 * 60_000,
   });
 
   const qs = new URLSearchParams();
@@ -55,10 +62,28 @@ export default function AdminReportsPage() {
       (await fetch(`/api/admin/reports?${qs.toString()}`)).json(),
   });
 
-  function downloadExport(format: "csv" | "xlsx" | "pdf") {
-    const exportQs = new URLSearchParams(qs);
-    exportQs.set("format", format);
-    window.open(`/api/admin/reports?${exportQs.toString()}`, "_blank");
+  async function downloadExport(format: "csv" | "xlsx" | "pdf") {
+    setExporting(format);
+    try {
+      const exportQs = new URLSearchParams(qs);
+      exportQs.set("format", format);
+      const res = await fetch(`/api/admin/reports?${exportQs.toString()}`);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `creightweb-report-${from || "all"}-${to || "now"}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${format.toUpperCase()} report`);
+    } catch {
+      toast.error(`Failed to export ${format.toUpperCase()} report`);
+    } finally {
+      setExporting(null);
+    }
   }
 
   return (
@@ -72,22 +97,40 @@ export default function AdminReportsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
+            disabled={exporting !== null}
             onClick={() => downloadExport("csv")}
-            className="btn-pill-light px-4 py-2 text-xs inline-flex items-center gap-1.5"
+            className="btn-pill-light px-4 py-2 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" /> CSV
+            {exporting === "csv" ? (
+              <Spinner className="w-3.5 h-3.5" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            CSV
           </button>
           <button
+            disabled={exporting !== null}
             onClick={() => downloadExport("xlsx")}
-            className="btn-pill-light px-4 py-2 text-xs inline-flex items-center gap-1.5"
+            className="btn-pill-light px-4 py-2 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Excel (.xlsx)
+            {exporting === "xlsx" ? (
+              <Spinner className="w-3.5 h-3.5" />
+            ) : (
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+            )}
+            Excel (.xlsx)
           </button>
           <button
+            disabled={exporting !== null}
             onClick={() => downloadExport("pdf")}
-            className="btn-pill-dark px-4 py-2 text-xs inline-flex items-center gap-1.5"
+            className="btn-pill-dark px-4 py-2 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
           >
-            <FileText className="w-3.5 h-3.5" /> Download PDF
+            {exporting === "pdf" ? (
+              <Spinner className="w-3.5 h-3.5" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
+            Download PDF
           </button>
         </div>
       </div>
@@ -151,9 +194,13 @@ export default function AdminReportsPage() {
             >
               {item.label}
             </div>
-            <div className="text-3xl font-bold mt-1">
-              {isLoading ? "—" : item.val}
-            </div>
+            {isLoading ? (
+              <Skeleton
+                className={`h-9 w-16 mt-1 ${item.accent ? "bg-white/25" : ""}`}
+              />
+            ) : (
+              <div className="text-3xl font-bold mt-1">{item.val}</div>
+            )}
           </div>
         ))}
       </div>
@@ -177,21 +224,31 @@ export default function AdminReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F2F2EE]">
-              {(data?.callerSummary || []).map((c) => (
-                <tr key={c.callerId}>
-                  <td className="p-3.5 font-semibold">{c.callerName}</td>
-                  <td className="p-3.5 text-right font-bold">{c.totalCalls}</td>
-                  <td className="p-3.5 text-right text-[#12804A] font-medium">
-                    {c.interested}
-                  </td>
-                  <td className="p-3.5 text-right text-[#FF5C1C] font-medium">
-                    {c.meetings}
-                  </td>
-                  <td className="p-3.5 text-right font-bold">{c.won}</td>
-                  <td className="p-3.5 text-right">{c.callbacks}</td>
-                  <td className="p-3.5 text-right text-[#737370]">{c.noAnswer}</td>
-                </tr>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={7} className="p-3.5">
+                      <Skeleton className="h-8 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                (data?.callerSummary || []).map((c) => (
+                  <tr key={c.callerId}>
+                    <td className="p-3.5 font-semibold">{c.callerName}</td>
+                    <td className="p-3.5 text-right font-bold">{c.totalCalls}</td>
+                    <td className="p-3.5 text-right text-[#12804A] font-medium">
+                      {c.interested}
+                    </td>
+                    <td className="p-3.5 text-right text-[#FF5C1C] font-medium">
+                      {c.meetings}
+                    </td>
+                    <td className="p-3.5 text-right font-bold">{c.won}</td>
+                    <td className="p-3.5 text-right">{c.callbacks}</td>
+                    <td className="p-3.5 text-right text-[#737370]">{c.noAnswer}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

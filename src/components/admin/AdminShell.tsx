@@ -20,6 +20,8 @@ import {
   Search,
 } from "lucide-react";
 import { PublicUser } from "@/types/crm";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { DownloadAppButton } from "@/components/ui/DownloadAppButton";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -102,16 +104,21 @@ export function AdminShell({
           })}
         </nav>
 
-        <button
-          onClick={handleLogout}
-          title="Logout"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium text-[#737370] hover:bg-[#FEECEC] hover:text-[#C92A2A] transition-colors overflow-hidden mt-2"
-        >
-          <LogOut className="w-5 h-5 shrink-0" />
-          <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            Logout
-          </span>
-        </button>
+        <div className="space-y-1.5 mt-2">
+          <div className="px-1 overflow-hidden">
+            <DownloadAppButton className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl text-xs font-medium text-[#111111] bg-[#F5F5F3] hover:bg-[#EBEBE7] transition-colors overflow-hidden whitespace-nowrap" />
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Logout"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium text-[#737370] hover:bg-[#FEECEC] hover:text-[#C92A2A] transition-colors overflow-hidden"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              Logout
+            </span>
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Sidebar Drawer */}
@@ -157,13 +164,16 @@ export function AdminShell({
                 );
               })}
             </nav>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-[#C92A2A] hover:bg-[#FEECEC] mt-4"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
+            <div className="space-y-2 mt-4">
+              <DownloadAppButton className="w-full btn-pill-light py-2.5 text-xs inline-flex items-center justify-center gap-2" />
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-[#C92A2A] hover:bg-[#FEECEC]"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            </div>
           </aside>
         </div>
       )}
@@ -193,6 +203,8 @@ export function AdminShell({
           </div>
 
           <div className="flex items-center gap-2.5">
+            <DownloadAppButton className="hidden sm:inline-flex btn-pill-light px-3.5 py-2 text-xs items-center gap-1.5" />
+            <NotificationBell />
             <Link
               href="/admin/leads/new"
               className="btn-pill-dark px-4 py-2 text-sm inline-flex items-center gap-1.5"
@@ -202,7 +214,7 @@ export function AdminShell({
             </Link>
             <Link
               href="/admin/batches"
-              className="btn-pill-orange px-4 py-2 text-sm hidden sm:inline-flex items-center gap-1.5"
+              className="btn-pill-orange px-4 py-2 text-sm hidden md:inline-flex items-center gap-1.5"
             >
               <Layers className="w-4 h-4" />
               <span>Assign Batch</span>

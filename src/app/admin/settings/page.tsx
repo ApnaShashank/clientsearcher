@@ -4,12 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Save } from "lucide-react";
 import { AppSettings } from "@/types/crm";
+import { Skeleton, Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
-  const { data } = useQuery<{ settings: AppSettings }>({
+  const toast = useToast();
+  const { data, isLoading } = useQuery<{ settings: AppSettings }>({
     queryKey: ["crm-settings"],
     queryFn: async () => (await fetch("/api/settings")).json(),
+    staleTime: 5 * 60_000,
   });
 
   const [cities, setCities] = useState<string[]>([]);
@@ -19,7 +23,6 @@ export default function AdminSettingsPage() {
   const [newCategory, setNewCategory] = useState("");
   const [newService, setNewService] = useState("");
   const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState("");
 
   useEffect(() => {
     if (data?.settings) {
@@ -31,7 +34,6 @@ export default function AdminSettingsPage() {
 
   async function handleSave() {
     setSaving(true);
-    setSavedMsg("");
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -42,10 +44,14 @@ export default function AdminSettingsPage() {
           servicesToPitch: services,
         }),
       });
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["crm-settings"] });
-        setSavedMsg("Settings saved.");
+      if (!res.ok) {
+        toast.error("Failed to save settings");
+        return;
       }
+      queryClient.invalidateQueries({ queryKey: ["crm-settings"] });
+      toast.success("Settings saved");
+    } catch {
+      toast.error("Network error while saving settings");
     } finally {
       setSaving(false);
     }
@@ -91,23 +97,27 @@ export default function AdminSettingsPage() {
             <Plus className="w-4 h-4" /> Add
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {items.map((item) => (
-            <span
-              key={item}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F3] text-xs font-medium"
-            >
-              {item}
-              <button
-                type="button"
-                onClick={() => setItems(items.filter((x) => x !== item))}
-                className="text-[#737370] hover:text-[#C92A2A]"
+        {isLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {items.map((item) => (
+              <span
+                key={item}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F3] text-xs font-medium"
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </span>
-          ))}
-        </div>
+                {item}
+                <button
+                  type="button"
+                  onClick={() => setItems(items.filter((x) => x !== item))}
+                  className="text-[#737370] hover:text-[#C92A2A]"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -124,18 +134,12 @@ export default function AdminSettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn-pill-dark px-5 py-2.5 text-sm inline-flex items-center gap-2"
+          className="btn-pill-dark px-5 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-60"
         >
-          <Save className="w-4 h-4" />
+          {saving ? <Spinner className="w-4 h-4" /> : <Save className="w-4 h-4" />}
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
-
-      {savedMsg && (
-        <div className="bg-[#E6F9EE] text-[#12804A] text-sm font-medium px-4 py-3 rounded-2xl">
-          {savedMsg}
-        </div>
-      )}
 
       {renderTagEditor(
         "Cities",

@@ -11,6 +11,8 @@ import {
   PublicUser,
 } from "@/types/crm";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton, Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 interface WorkedLead extends Lead {
   callHistory: CallLog[];
@@ -18,23 +20,29 @@ interface WorkedLead extends Lead {
 
 export default function AdminHistoryPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<"worked" | "activity">("worked");
   const [outcome, setOutcome] = useState("");
   const [callerId, setCallerId] = useState("");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [recyclingId, setRecyclingId] = useState<string | null>(null);
 
   const { data: callersData } = useQuery<{ callers: PublicUser[] }>({
     queryKey: ["admin-callers"],
     queryFn: async () => (await fetch("/api/admin/callers")).json(),
+    staleTime: 5 * 60_000,
   });
 
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ page: String(page), limit: "20" });
   if (outcome) params.set("outcome", outcome);
   if (callerId) params.set("callerId", callerId);
   if (q) params.set("q", q);
 
   const { data, isLoading } = useQuery<{
     workedLeads: WorkedLead[];
+    total: number;
+    totalPages: number;
     activities: ActivityLog[];
   }>({
     queryKey: ["admin-history", params.toString()],
@@ -44,10 +52,24 @@ export default function AdminHistoryPage() {
 
   async function handleRecycle(leadId: string) {
     if (!confirm("Recycle this lead back to Unassigned?")) return;
-    await fetch(`/api/admin/leads/${leadId}/recycle`, { method: "POST" });
-    queryClient.invalidateQueries({ queryKey: ["admin-history"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+    setRecyclingId(leadId);
+    try {
+      const res = await fetch(`/api/admin/leads/${leadId}/recycle`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        toast.error("Failed to recycle lead");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-history"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      toast.success("Lead recycled to Unassigned pool");
+    } finally {
+      setRecyclingId(null);
+    }
   }
+
+  const totalPages = data?.totalPages ?? 1;
 
   return (
     <div className="space-y-5">
@@ -67,7 +89,7 @@ export default function AdminHistoryPage() {
               tab === "worked" ? "bg-[#111111] text-white" : "text-[#737370]"
             }`}
           >
-            Worked Leads ({data?.workedLeads?.length || 0})
+            Worked Leads ({data?.total ?? data?.workedLeads?.length ?? 0})
           </button>
           <button
             onClick={() => setTab("activity")}
@@ -85,13 +107,19 @@ export default function AdminHistoryPage() {
           <div className="crm-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search business, phone, city..."
               className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
             />
             <select
               value={outcome}
-              onChange={(e) => setOutcome(e.target.value)}
+              onChange={(e) => {
+                setOutcome(e.target.value);
+                setPage(1);
+              }}
               className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
             >
               <option value="">All Outcomes</option>
@@ -103,7 +131,10 @@ export default function AdminHistoryPage() {
             </select>
             <select
               value={callerId}
-              onChange={(e) => setCallerId(e.target.value)}
+              onChange={(e) => {
+                setCallerId(e.target.value);
+                setPage(1);
+              }}
               className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
             >
               <option value="">All Callers</option>
@@ -117,9 +148,9 @@ export default function AdminHistoryPage() {
 
           <div className="space-y-3">
             {isLoading ? (
-              <div className="crm-card p-8 text-center text-sm text-[#737370]">
-                Loading call history...
-              </div>
+              Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-3xl" />
+              ))
             ) : (data?.workedLeads || []).length === 0 ? (
               <div className="crm-card p-10 text-center text-sm text-[#737370]">
                 No worked leads yet.
@@ -140,10 +171,15 @@ export default function AdminHistoryPage() {
                     </div>
                     {lead.status !== "Unassigned" && (
                       <button
+                        disabled={recyclingId === lead.id}
                         onClick={() => handleRecycle(lead.id)}
-                        className="btn-pill-light px-3 py-1.5 text-xs inline-flex items-center gap-1.5"
+                        className="btn-pill-light px-3 py-1.5 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        {recyclingId === lead.id ? (
+                          <Spinner className="w-3.5 h-3.5" />
+                        ) : (
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        )}
                         Recycle
                       </button>
                     )}
@@ -172,6 +208,30 @@ export default function AdminHistoryPage() {
               ))
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-xs pt-2">
+              <span className="text-[#737370]">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="btn-pill-light px-3 py-1.5 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="btn-pill-light px-3 py-1.5 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <div className="crm-card divide-y divide-[#F2F2EE]">

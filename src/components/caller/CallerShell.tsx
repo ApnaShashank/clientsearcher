@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { PhoneCall, CalendarClock, BarChart3, FileText, LogOut } from "lucide-react";
 import { PublicUser } from "@/types/crm";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { DownloadAppButton } from "@/components/ui/DownloadAppButton";
 
 const TABS = [
   { href: "/caller", label: "Today", icon: PhoneCall },
@@ -34,32 +36,65 @@ export function CallerShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F3] text-[#111111] flex flex-col max-w-md mx-auto relative shadow-[0_0_40px_rgba(0,0,0,0.04)]">
-      {/* Top Mobile Header */}
-      <header className="sticky top-0 z-20 bg-[#F5F5F3]/95 backdrop-blur-md px-4 py-3.5 flex items-center justify-between border-b border-[#EBEBE7]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#FF5C1C] text-white font-bold text-sm flex items-center justify-center">
-            C
+    <div className="min-h-screen bg-[#F5F5F3] text-[#111111] flex flex-col">
+      {/* Top Header (Mobile 390px + Wide Desktop Nav) */}
+      <header className="sticky top-0 z-20 bg-[#F5F5F3]/95 backdrop-blur-md border-b border-[#EBEBE7]">
+        <div className="max-w-md lg:max-w-6xl mx-auto px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#FF5C1C] text-white font-bold text-sm flex items-center justify-center shrink-0">
+              C
+            </div>
+            <div className="leading-tight">
+              <div className="text-sm font-bold">{user.name}</div>
+              <div className="text-[11px] text-[#737370]">Creightweb Caller</div>
+            </div>
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-bold">{user.name}</div>
-            <div className="text-[11px] text-[#737370]">Creightweb Caller</div>
+
+          {/* Desktop Horizontal Nav Pills */}
+          <nav className="hidden lg:flex items-center gap-1.5 bg-white border border-[#EBEBE7] rounded-full p-1">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = isActive(t.href);
+              return (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    active
+                      ? "bg-[#111111] text-white"
+                      : "text-[#737370] hover:text-[#111111]"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{t.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <DownloadAppButton compact className="lg:hidden p-2 rounded-full bg-white border border-[#EBEBE7] text-[#111111]" />
+            <DownloadAppButton className="hidden lg:inline-flex btn-pill-light px-3.5 py-1.5 text-xs items-center gap-1.5" />
+            <NotificationBell />
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-full bg-white border border-[#EBEBE7] text-[#737370] hover:text-[#C92A2A]"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="p-2 rounded-full bg-white border border-[#EBEBE7] text-[#737370] hover:text-[#C92A2A]"
-          aria-label="Logout"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 pt-4 pb-24">{children}</main>
+      <main className="flex-1 w-full max-w-md lg:max-w-6xl mx-auto px-4 lg:px-8 pt-4 lg:pt-6 pb-24 lg:pb-10">
+        {children}
+      </main>
 
-      {/* Fixed Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-[#EBEBE7] px-2 py-2 flex items-center justify-around z-30">
+      {/* Mobile Fixed Bottom Tab Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-[#EBEBE7] px-2 py-2 flex items-center justify-around z-30">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = isActive(t.href);

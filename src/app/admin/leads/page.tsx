@@ -8,6 +8,7 @@ import {
   Plus,
   Upload,
   RotateCcw,
+  Undo2,
   X,
   Phone,
   MapPin,
@@ -24,6 +25,8 @@ import {
   WEBSITE_STATUSES,
 } from "@/types/crm";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton, Spinner } from "@/components/ui/Skeleton";
+import { useToast } from "@/components/ui/Toast";
 
 const ALL_STATUSES = [
   "Unassigned",
@@ -41,6 +44,7 @@ const ALL_STATUSES = [
 export default function AdminLeadsPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
@@ -51,11 +55,13 @@ export default function AdminLeadsPage() {
   const [status, setStatus] = useState(searchParams.get("status") || "");
   const [assigned, setAssigned] = useState("");
   const [q, setQ] = useState(searchParams.get("q") || "");
+  const [page, setPage] = useState(1);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignCallerId, setAssignCallerId] = useState("");
   const [assignVisibleFrom, setAssignVisibleFrom] = useState("");
   const [assignBusy, setAssignBusy] = useState(false);
+  const [recallBusy, setRecallBusy] = useState(false);
 
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
   const [recycling, setRecycling] = useState(false);
@@ -65,19 +71,22 @@ export default function AdminLeadsPage() {
     if (urlQ !== null) setQ(urlQ);
     const urlStatus = searchParams.get("status");
     if (urlStatus !== null) setStatus(urlStatus);
+    setPage(1);
   }, [searchParams]);
 
   const { data: settingsData } = useQuery<{ settings: AppSettings }>({
     queryKey: ["crm-settings"],
     queryFn: async () => (await fetch("/api/settings")).json(),
+    staleTime: 5 * 60_000,
   });
 
   const { data: callersData } = useQuery<{ callers: PublicUser[] }>({
     queryKey: ["admin-callers"],
     queryFn: async () => (await fetch("/api/admin/callers")).json(),
+    staleTime: 5 * 60_000,
   });
 
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ page: String(page), limit: "25" });
   if (city) params.set("city", city);
   if (area) params.set("area", area);
   if (category) params.set("category", category);
@@ -88,13 +97,21 @@ export default function AdminLeadsPage() {
   if (assigned) params.set("assigned", assigned);
   if (q) params.set("q", q);
 
-  const { data: leadsData, isLoading } = useQuery<{ leads: Lead[] }>({
+  const { data: leadsData, isLoading } = useQuery<{
+    leads: Lead[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>({
     queryKey: ["admin-leads", params.toString()],
     queryFn: async () =>
       (await fetch(`/api/admin/leads?${params.toString()}`)).json(),
   });
 
-  const { data: detailData } = useQuery<{ lead: Lead; callLogs: CallLog[] }>({
+  const { data: detailData, isLoading: detailLoading } = useQuery<{
+    lead: Lead;
+    callLogs: CallLog[];
+  }>({
     queryKey: ["admin-lead-detail", drawerLeadId],
     enabled: Boolean(drawerLeadId),
     queryFn: async () =>
@@ -102,6 +119,8 @@ export default function AdminLeadsPage() {
   });
 
   const leads = leadsData?.leads || [];
+  const total = leadsData?.total ?? leads.length;
+  const totalPages = leadsData?.totalPages ?? 1;
   const settings = settingsData?.settings;
   const callers = (callersData?.callers || []).filter((c) => c.isActive);
 
@@ -134,15 +153,50 @@ export default function AdminLeadsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to assign selected leads");
+        toast.error(data.error || "Failed to assign selected leads");
       } else {
         setSelectedIds([]);
         queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
         queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
-        alert(`Assigned ${data.batch.leadIds.length} leads in batch "${data.batch.name}"`);
+        queryClient.invalidateQueries({ queryKey: ["admin-batches"] });
+        toast.success(`Assigned ${data.batch.leadIds.length} leads to ${data.batch.callerName}`);
       }
+    } catch {
+      toast.error("Network error while assigning leads");
     } finally {
       setAssignBusy(false);
+    }
+  }
+
+  async function handleRecall(leadIds: string[]) {
+    if (leadIds.length === 0) return;
+    setRecallBusy(true);
+    try {
+      const res = await fetch("/api/admin/leads/recall", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to recall leads");
+        return;
+      }
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-batches"] });
+      if (drawerLeadId) {
+        queryClient.invalidateQueries({ queryKey: ["admin-lead-detail", drawerLeadId] });
+      }
+      toast.success(
+        `Recalled ${data.recalledCount} lead(s) to Unassigned pool` +
+          (data.skippedCount ? ` (${data.skippedCount} skipped)` : "")
+      );
+    } catch {
+      toast.error("Network error while recalling leads");
+    } finally {
+      setRecallBusy(false);
     }
   }
 
@@ -161,11 +215,14 @@ export default function AdminLeadsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "Admin deliberate recycle" }),
       });
-      if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-lead-detail", leadId] });
-        queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+      if (!res.ok) {
+        toast.error("Failed to recycle lead");
+        return;
       }
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lead-detail", leadId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+      toast.success("Lead recycled to Unassigned pool");
     } finally {
       setRecycling(false);
     }
@@ -177,7 +234,7 @@ export default function AdminLeadsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Leads Database</h1>
           <p className="text-sm text-[#737370]">
-            {leads.length} leads matching current filters
+            {total} leads matching current filters
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -203,13 +260,19 @@ export default function AdminLeadsPage() {
         <input
           type="text"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search name, phone..."
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#111111]"
         />
         <select
           value={city}
-          onChange={(e) => setCity(e.target.value)}
+          onChange={(e) => {
+            setCity(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">All Cities</option>
@@ -222,13 +285,19 @@ export default function AdminLeadsPage() {
         <input
           type="text"
           value={area}
-          onChange={(e) => setArea(e.target.value)}
+          onChange={(e) => {
+            setArea(e.target.value);
+            setPage(1);
+          }}
           placeholder="Area / Locality..."
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         />
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">All Categories</option>
@@ -240,7 +309,10 @@ export default function AdminLeadsPage() {
         </select>
         <select
           value={websiteStatus}
-          onChange={(e) => setWebsiteStatus(e.target.value)}
+          onChange={(e) => {
+            setWebsiteStatus(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">Website Status</option>
@@ -252,7 +324,10 @@ export default function AdminLeadsPage() {
         </select>
         <select
           value={service}
-          onChange={(e) => setService(e.target.value)}
+          onChange={(e) => {
+            setService(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">Services to Pitch</option>
@@ -264,7 +339,10 @@ export default function AdminLeadsPage() {
         </select>
         <select
           value={priority}
-          onChange={(e) => setPriority(e.target.value)}
+          onChange={(e) => {
+            setPriority(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">All Priorities</option>
@@ -276,7 +354,10 @@ export default function AdminLeadsPage() {
         </select>
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">All Statuses</option>
@@ -288,7 +369,10 @@ export default function AdminLeadsPage() {
         </select>
         <select
           value={assigned}
-          onChange={(e) => setAssigned(e.target.value)}
+          onChange={(e) => {
+            setAssigned(e.target.value);
+            setPage(1);
+          }}
           className="bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3 py-2 text-sm"
         >
           <option value="">Assigned &amp; Unassigned</option>
@@ -306,6 +390,7 @@ export default function AdminLeadsPage() {
             setStatus("");
             setAssigned("");
             setQ("");
+            setPage(1);
           }}
           className="btn-pill-light px-3 py-2 text-sm"
         >
@@ -313,11 +398,11 @@ export default function AdminLeadsPage() {
         </button>
       </div>
 
-      {/* Bulk Assign Bar */}
+      {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
         <div className="crm-card p-4 bg-[#FFF0EA] border-[#FFD3C0] flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm font-semibold text-[#111111]">
-            {selectedIds.length} lead(s) selected (only Unassigned leads will be included)
+            {selectedIds.length} lead(s) selected
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -344,8 +429,16 @@ export default function AdminLeadsPage() {
               onClick={handleBulkAssign}
               className="btn-pill-dark px-4 py-1.5 text-sm inline-flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Layers className="w-4 h-4" />
+              {assignBusy ? <Spinner className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
               {assignBusy ? "Assigning..." : "Assign Batch"}
+            </button>
+            <button
+              disabled={recallBusy}
+              onClick={() => handleRecall(selectedIds)}
+              className="btn-pill-light px-4 py-1.5 text-sm inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {recallBusy ? <Spinner className="w-4 h-4" /> : <Undo2 className="w-4 h-4" />}
+              {recallBusy ? "Recalling..." : "Recall to Unassigned Pool"}
             </button>
           </div>
         </div>
@@ -375,11 +468,13 @@ export default function AdminLeadsPage() {
             </thead>
             <tbody className="divide-y divide-[#F2F2EE]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-[#737370]">
-                    Loading leads...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={idx}>
+                    <td colSpan={8} className="p-3.5">
+                      <Skeleton className="h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
               ) : leads.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-10 text-center text-[#737370]">
@@ -441,6 +536,31 @@ export default function AdminLeadsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-[#EBEBE7] flex items-center justify-between text-xs">
+            <span className="text-[#737370]">
+              Page {page} of {totalPages} ({total} leads)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="btn-pill-light px-3 py-1.5 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="btn-pill-light px-3 py-1.5 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Lead Detail Drawer */}
@@ -454,12 +574,14 @@ export default function AdminLeadsPage() {
             <div className="flex items-start justify-between gap-3 mb-5">
               <div>
                 <h2 className="text-xl font-bold">
-                  {detailData?.lead?.businessName || "Loading..."}
+                  {detailData?.lead?.businessName || "Lead Details"}
                 </h2>
-                <p className="text-sm text-[#737370]">
-                  {detailData?.lead?.category} · {detailData?.lead?.area},{" "}
-                  {detailData?.lead?.city}
-                </p>
+                {detailData?.lead && (
+                  <p className="text-sm text-[#737370]">
+                    {detailData.lead.category} · {detailData.lead.area},{" "}
+                    {detailData.lead.city}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setDrawerLeadId(null)}
@@ -469,7 +591,13 @@ export default function AdminLeadsPage() {
               </button>
             </div>
 
-            {detailData?.lead && (
+            {detailLoading || !detailData?.lead ? (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : (
               <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge label={detailData.lead.status} />
@@ -536,18 +664,41 @@ export default function AdminLeadsPage() {
                   </div>
                 )}
 
-                {detailData.lead.status !== "Unassigned" && (
-                  <button
-                    disabled={recycling}
-                    onClick={() => handleRecycle(detailData.lead.id)}
-                    className="w-full btn-pill-light py-2.5 text-sm inline-flex items-center justify-center gap-2 border-[#FFD3C0] text-[#E84E10]"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    {recycling
-                      ? "Recycling..."
-                      : "Recycle Lead Back to Unassigned Pool"}
-                  </button>
-                )}
+                {detailData.lead.status === "Assigned" &&
+                  detailData.lead.callCount === 0 && (
+                    <button
+                      disabled={recallBusy}
+                      onClick={() => handleRecall([detailData.lead.id])}
+                      className="w-full btn-pill-dark py-2.5 text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {recallBusy ? (
+                        <Spinner className="w-4 h-4" />
+                      ) : (
+                        <Undo2 className="w-4 h-4" />
+                      )}
+                      {recallBusy
+                        ? "Recalling..."
+                        : "Recall to Unassigned Pool"}
+                    </button>
+                  )}
+
+                {detailData.lead.status !== "Unassigned" &&
+                  detailData.lead.callCount > 0 && (
+                    <button
+                      disabled={recycling}
+                      onClick={() => handleRecycle(detailData.lead.id)}
+                      className="w-full btn-pill-light py-2.5 text-sm inline-flex items-center justify-center gap-2 border-[#FFD3C0] text-[#E84E10] disabled:opacity-60"
+                    >
+                      {recycling ? (
+                        <Spinner className="w-4 h-4" />
+                      ) : (
+                        <RotateCcw className="w-4 h-4" />
+                      )}
+                      {recycling
+                        ? "Recycling..."
+                        : "Recycle Lead Back to Unassigned Pool"}
+                    </button>
+                  )}
 
                 <div>
                   <h3 className="text-sm font-bold mb-3">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCaller } from "@/lib/auth";
+import { getCollection } from "@/lib/db";
 import {
   getLeadById,
   insertCallLog,
@@ -8,7 +9,8 @@ import {
 } from "@/lib/repo";
 import { getPhoneLast4 } from "@/lib/phone";
 import { logActivity } from "@/lib/activity";
-import { CALL_OUTCOMES, CallLog, CallOutcome, DurationFeel } from "@/types/crm";
+import { createNotification } from "@/lib/notifications";
+import { CALL_OUTCOMES, CallLog, CallOutcome, DurationFeel, Lead } from "@/types/crm";
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +25,6 @@ export async function POST(
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
-  // Strict ownership check
   if (lead.assignedTo !== auth.user.id) {
     return NextResponse.json(
       { error: "Forbidden: This lead is not assigned to you." },
@@ -82,6 +83,44 @@ export async function POST(
       lastCalledAt: nowIso,
       callCount: (lead.callCount || 0) + 1,
     });
+
+    // Notify Admin on high-value outcomes
+    if (
+      outcome === "Interested" ||
+      outcome === "Meeting Fixed" ||
+      outcome === "Won"
+    ) {
+      await createNotification({
+        recipientId: "admin",
+        title: `Lead Marked ${outcome}`,
+        message: `${auth.user.name} marked "${lead.businessName}" (${lead.city}) as ${outcome}.`,
+        type: "outcome",
+        entityId: lead.id,
+      });
+    }
+
+    // Check if the batch is now fully called
+    if (lead.batchId) {
+      const { col: leadCol, memory } = await getCollection<Lead>("leads");
+      const remainingInBatch = leadCol
+        ? await leadCol.countDocuments({
+            batchId: lead.batchId,
+            status: "Assigned",
+          })
+        : memory.leads.filter(
+            (l) => l.batchId === lead.batchId && l.status === "Assigned"
+          ).length;
+
+      if (remainingInBatch === 0) {
+        await createNotification({
+          recipientId: "admin",
+          title: "Batch Fully Called",
+          message: `${auth.user.name} completed all leads in batch.`,
+          type: "batch",
+          entityId: lead.batchId,
+        });
+      }
+    }
 
     await logActivity({
       actorId: auth.user.id,

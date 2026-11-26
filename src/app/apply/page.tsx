@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Spinner } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default function ApplyPage() {
   const router = useRouter();
@@ -86,14 +88,15 @@ export default function ApplyPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] text-white font-bold flex items-center justify-center">
-              C
-            </div>
+            <BrandLogo size="md" />
             <span className="font-bold text-lg">Creightweb</span>
           </Link>
-          <Link href="/login" className="text-xs font-semibold hover:underline">
-            Already registered? Login
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+            <Link href="/login" className="text-xs font-semibold hover:underline">
+              Already registered? Login
+            </Link>
+          </div>
         </div>
 
         <div className="crm-card p-6 sm:p-8 space-y-6">

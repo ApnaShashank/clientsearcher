@@ -24,6 +24,8 @@ import {
 import { PublicUser } from "@/types/crm";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { DownloadAppButton } from "@/components/ui/DownloadAppButton";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -76,9 +78,7 @@ export function AdminShell({
           href="/admin"
           className="flex items-center gap-3 px-2.5 mb-7 overflow-hidden"
         >
-          <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] flex items-center justify-center text-white font-bold text-base shrink-0">
-            C
-          </div>
+          <BrandLogo size="md" />
           <span className="font-bold text-base tracking-tight whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
             Creightweb
           </span>
@@ -135,9 +135,7 @@ export function AdminShell({
           <aside className="relative w-64 bg-white h-full p-5 flex flex-col z-10 shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] flex items-center justify-center text-white font-bold">
-                  C
-                </div>
+                <BrandLogo size="md" />
                 <span className="font-bold text-base">Creightweb</span>
               </div>
               <button
@@ -208,6 +206,7 @@ export function AdminShell({
 
           <div className="flex items-center gap-2.5">
             <DownloadAppButton className="hidden sm:inline-flex btn-pill-light px-3.5 py-2 text-xs items-center gap-1.5" />
+            <ThemeToggle />
             <NotificationBell />
             <Link
               href="/admin/leads/new"

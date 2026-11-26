@@ -15,6 +15,8 @@ import {
 import { PublicUser } from "@/types/crm";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { DownloadAppButton } from "@/components/ui/DownloadAppButton";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const TABS = [
   { href: "/caller", label: "Today", icon: PhoneCall },
@@ -51,9 +53,7 @@ export function CallerShell({
       <header className="sticky top-0 z-20 bg-[#F5F5F3]/95 backdrop-blur-md border-b border-[#EBEBE7]">
         <div className="max-w-md lg:max-w-6xl mx-auto px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#FF5C1C] text-white font-bold text-sm flex items-center justify-center shrink-0">
-              C
-            </div>
+            <BrandLogo size="sm" />
             <div className="leading-tight">
               <div className="text-sm font-bold">{user.name}</div>
               <div className="text-[11px] text-[#737370]">Creightweb Caller</div>
@@ -88,6 +88,7 @@ export function CallerShell({
               className="lg:hidden p-2 rounded-full bg-white border border-[#EBEBE7] text-[#111111]"
             />
             <DownloadAppButton className="hidden lg:inline-flex btn-pill-light px-3.5 py-1.5 text-xs items-center gap-1.5" />
+            <ThemeToggle />
             <NotificationBell />
             <button
               onClick={handleLogout}

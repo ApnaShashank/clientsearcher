@@ -20,8 +20,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("creightweb_theme");
+      if (saved === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      }
     }
   }, []);
 

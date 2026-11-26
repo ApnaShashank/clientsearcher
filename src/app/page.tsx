@@ -18,6 +18,8 @@ import {
   Mail,
 } from "lucide-react";
 import { ShowcaseItem } from "@/types/crm";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface PublicData {
   showcase: ShowcaseItem[];
@@ -56,14 +58,13 @@ export default function LandingPage() {
       <header className="sticky top-0 z-20 bg-[#F5F5F3]/90 backdrop-blur-md border-b border-[#EBEBE7]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] text-white font-bold text-base flex items-center justify-center shrink-0">
-              C
-            </div>
+            <BrandLogo size="md" />
             <span className="font-bold text-base sm:text-lg tracking-tight">
               Creightweb
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               href="/login"
               className="btn-pill-light px-4 py-2 text-xs sm:text-sm"

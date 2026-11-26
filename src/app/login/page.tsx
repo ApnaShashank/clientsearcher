@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, User } from "lucide-react";
 import { Spinner } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,18 +54,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F3] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md crm-card p-7 sm:p-9">
-        <div className="flex items-center gap-3 mb-7">
-          <div className="w-10 h-10 rounded-2xl bg-[#FF5C1C] flex items-center justify-center text-white font-bold text-lg">
-            C
+        <div className="flex items-center justify-between gap-3 mb-7">
+          <div className="flex items-center gap-3">
+            <BrandLogo size="lg" />
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-[#111111]">
+                Creightweb CRM
+              </h1>
+              <p className="text-xs text-[#737370]">
+                Sign in with your agency credentials
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#111111]">
-              Creightweb CRM
-            </h1>
-            <p className="text-xs text-[#737370]">
-              Sign in with your agency credentials
-            </p>
-          </div>
+          <ThemeToggle />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

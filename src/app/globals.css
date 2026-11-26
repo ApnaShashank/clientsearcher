@@ -11,6 +11,17 @@
   --accent-soft: #FFF0EA;
 }
 
+html.dark {
+  --background: #0E0E10;
+  --card: #18181B;
+  --card-muted: #202024;
+  --border: #2B2B30;
+  --text-primary: #F5F5F3;
+  --text-muted: #A1A1AA;
+  --accent: #FF5C1C;
+  --accent-soft: #2A1812;
+}
+
 @theme {
   --color-background: var(--background);
   --color-card: var(--card);
@@ -22,17 +33,18 @@
 }
 
 body {
-  background-color: #F5F5F3;
-  color: #111111;
+  background-color: var(--background);
+  color: var(--text-primary);
   font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Soft Finexy card */
 .crm-card {
-  background-color: #FFFFFF;
-  border: 1px solid #EBEBE7;
+  background-color: var(--card);
+  border: 1px solid var(--border);
   border-radius: 1.5rem;
   box-shadow: 0 2px 14px rgba(17, 17, 17, 0.03);
 }
@@ -52,6 +64,14 @@ body {
   transform: scale(0.98);
 }
 
+html.dark .btn-pill-dark {
+  background-color: #F5F5F3;
+  color: #111111;
+}
+html.dark .btn-pill-dark:hover {
+  background-color: #E2E2DC;
+}
+
 /* Pill secondary button */
 .btn-pill-light {
   background-color: #FFFFFF;
@@ -63,6 +83,15 @@ body {
 }
 .btn-pill-light:hover {
   background-color: #F5F5F3;
+}
+
+html.dark .btn-pill-light {
+  background-color: #222226;
+  color: #F5F5F3;
+  border-color: #323238;
+}
+html.dark .btn-pill-light:hover {
+  background-color: #2C2C32;
 }
 
 /* Orange accent button */
@@ -80,15 +109,54 @@ body {
   transform: scale(0.98);
 }
 
+/* Dark mode surface & text overrides for Finexy palette */
+html.dark .bg-\[\#F5F5F3\],
+html.dark .bg-\[\#F5F5F3\]\/90,
+html.dark .bg-\[\#F5F5F3\]\/95 {
+  background-color: #0E0E10 !important;
+}
+html.dark .bg-white {
+  background-color: #18181B !important;
+}
+html.dark .bg-\[\#F9F9F7\] {
+  background-color: #202024 !important;
+}
+html.dark .bg-\[\#FFF0EA\],
+html.dark .bg-\[\#FFFDFB\],
+html.dark .bg-\[\#FFF8F5\] {
+  background-color: #281711 !important;
+}
+html.dark .text-\[\#111111\] {
+  color: #F5F5F3 !important;
+}
+html.dark .text-\[\#737370\] {
+  color: #A1A1AA !important;
+}
+html.dark .border-\[\#EBEBE7\],
+html.dark .border-\[\#E2E2DC\],
+html.dark .border-\[\#E8E8E4\],
+html.dark .border-\[\#F2F2EE\],
+html.dark .divide-\[\#F2F2EE\] > :not(:last-child) {
+  border-color: #2B2B30 !important;
+}
+html.dark input,
+html.dark select,
+html.dark textarea {
+  color: #F5F5F3;
+}
+
 /* Clean scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F5F5F3;
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
   background: #D8D8D2;
   border-radius: 9999px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3F3F46;
 }

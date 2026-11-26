@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireCaller } from "@/lib/auth";
+import { requireApprovedCaller } from "@/lib/auth";
 import { getAllCallLogs, getAllLeads } from "@/lib/repo";
 import { CallLog } from "@/types/crm";
 
@@ -23,7 +23,7 @@ function computeStats(logs: CallLog[], assignedCount: number, callbacksPending: 
 }
 
 export async function GET() {
-  const auth = await requireCaller();
+  const auth = await requireApprovedCaller();
   if (auth.error) return auth.error;
 
   const [leads, callLogs] = await Promise.all([

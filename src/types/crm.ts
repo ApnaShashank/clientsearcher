@@ -81,6 +81,25 @@ export interface User {
   workingAreas: string[];
   preferredCategories: string[];
   isActive: boolean;
+  approvalStatus?: "Pending" | "Approved" | "Rejected";
+  email?: string;
+  whatsappNumber?: string;
+  fullAddress?: string;
+  villageArea?: string;
+  city?: string;
+  state?: string;
+  pinCode?: string;
+  preferredCallCityArea?: string;
+  workExperience?: string;
+  currentOccupation?: string;
+  languagesSpoken?: string[];
+  idProofType?: "Aadhaar" | "PAN";
+  idProofNumber?: string;
+  agreementSigned?: boolean;
+  agreementSignedAt?: string;
+  signatureDataUrl?: string;
+  signedFullName?: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -153,8 +172,112 @@ export interface AppSettings {
   cities: string[];
   categories: string[];
   servicesToPitch: string[];
+  contactPhone?: string;
+  contactWhatsapp?: string;
+  contactEmail?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  linkedinUrl?: string;
+  otherSocials?: string;
+  trainingVideoUrl?: string;
+  negotiationRules?: string[];
   updatedAt: string;
 }
+
+export interface ShowcaseItem {
+  id: string;
+  title: string;
+  businessName: string;
+  category: string;
+  liveUrl: string;
+  previewImage: string;
+  logoImage?: string;
+  type: "client" | "demo";
+  createdAt: string;
+}
+
+export interface PricingRow {
+  id: string;
+  category: string;
+  packageName: string;
+  priceMin: number;
+  priceMax: number;
+  domainIncluded: boolean;
+  domainNote: string;
+  note: string;
+  order: number;
+}
+
+export const DEFAULT_TRAINING_VIDEO_URL =
+  "https://drive.google.com/file/d/1OXiMmYEhmX-KBhi57nugLxL005onhyhs/view";
+
+export const DEFAULT_NEGOTIATION_RULES: string[] = [
+  "Hamesha pehle upar wala rate bolo (jaise ₹6,000). Kam karna pade to dheere-dheere, ek hi baar me seedha neeche mat aao.",
+  "Zyada kab lo: bada clinic/hospital ya bada restaurant, zyada pages/features, Admin Panel, online booking system, ya client ko kaam jaldi chahiye.",
+  "Kam kab karo: chhoti si dukaan ho, sirf menu page chahiye ho, ya budget sach me tight ho — tab chhota package do.",
+  'Floor se neeche kabhi mat jao: Website ₹4,500 se neeche nahi, Menu Page ₹1,000 se neeche nahi. Isse neeche client maange to bolo: "Sir, is rate par quality kaam possible nahi hai, mai apne sir se baat karke batata hu."',
+  "Domain wali baat saaf bolo: Menu Page me domain NAHI milta; baaki sab websites me customised domain shamil hai.",
+  "Payment hamesha Creightweb ko — khud kabhi paise mat lo (ye agreement me bhi hai).",
+  'Pakka na ho to galat waada mat karo — "Sir se confirm karke batata hu" bolna sahi jawab hai.',
+];
+
+export const DEFAULT_PRICING_ROWS: PricingRow[] = [
+  {
+    id: "price_1",
+    category: "Clinic / Hospital",
+    packageName: "Website",
+    priceMin: 4500,
+    priceMax: 6000,
+    domainIncluded: true,
+    domainNote: "Yes — customised domain included",
+    note: "Doctor se baat karke aur clinic ka size dekh kar rate rakho — bada clinic = upar wala rate",
+    order: 1,
+  },
+  {
+    id: "price_2",
+    category: "Clinic / Hospital",
+    packageName: "Website + Admin Panel",
+    priceMin: 8000,
+    priceMax: 10000,
+    domainIncluded: true,
+    domainNote: "Yes — customised domain included",
+    note: "Admin panel chahiye to ye package — appointments/records khud manage kar sakte hain",
+    order: 2,
+  },
+  {
+    id: "price_3",
+    category: "Restaurant",
+    packageName: "Website",
+    priceMin: 4500,
+    priceMax: 6000,
+    domainIncluded: true,
+    domainNote: "Yes — customised domain included",
+    note: "Menu, photos, location, order/enquiry — sab ke saath",
+    order: 3,
+  },
+  {
+    id: "price_4",
+    category: "Restaurant",
+    packageName: "Sirf Menu Page",
+    priceMin: 1000,
+    priceMax: 1500,
+    domainIncluded: false,
+    domainNote: "No — domain NAHI milega",
+    note: "Sirf digital menu page chahiye to yehi package; domain nahi hai isme, client ko pehle saaf bata do",
+    order: 4,
+  },
+  {
+    id: "price_5",
+    category: "Other (Salon, Gym, Coaching, Shops)",
+    packageName: "Website",
+    priceMin: 4500,
+    priceMax: 6000,
+    domainIncluded: true,
+    domainNote: "Yes — customised domain included",
+    note: "Business ka size aur features dekh kar rate",
+    order: 5,
+  },
+];
 
 export const DEFAULT_CATEGORIES = [
   "Restaurant",

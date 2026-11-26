@@ -510,8 +510,38 @@ export default function AdminLeadsPage() {
                       />
                     </td>
                     <td className="p-3.5">
-                      <div className="font-semibold text-[#111111]">
-                        {lead.businessName}
+                      <div className="font-semibold text-[#111111] flex items-center gap-1.5">
+                        <span>{lead.businessName}</span>
+                        {lead.googleMapsLink?.trim() && (
+                          <a
+                            href={lead.googleMapsLink.trim()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Open Google Maps"
+                            className="p-1 rounded-full hover:bg-[#FFF0EA] text-[#FF5C1C]"
+                          >
+                            <MapPin className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {lead.instagramHandle?.trim() && (
+                          <a
+                            href={
+                              lead.instagramHandle.trim().startsWith("http")
+                                ? lead.instagramHandle.trim()
+                                : `https://instagram.com/${lead.instagramHandle
+                                    .trim()
+                                    .replace(/^@/, "")}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Open Instagram"
+                            className="p-1 rounded-full hover:bg-[#FFF0EA] text-[#FF5C1C]"
+                          >
+                            <AtSign className="w-3.5 h-3.5" />
+                          </a>
+                        )}
                       </div>
                       <div className="text-xs text-[#737370]">{lead.category}</div>
                     </td>
@@ -633,15 +663,39 @@ export default function AdminLeadsPage() {
                       {detailData.lead.websiteUrl ? ` · ${detailData.lead.websiteUrl}` : ""}
                     </span>
                   </div>
-                  {detailData.lead.instagramHandle && (
+                  {detailData.lead.instagramHandle?.trim() && (
                     <div className="flex items-center gap-2">
                       <AtSign className="w-4 h-4 text-[#737370]" />
-                      <span>
+                      <a
+                        href={
+                          detailData.lead.instagramHandle.trim().startsWith("http")
+                            ? detailData.lead.instagramHandle.trim()
+                            : `https://instagram.com/${detailData.lead.instagramHandle
+                                .trim()
+                                .replace(/^@/, "")}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#FF5C1C] font-medium hover:underline"
+                      >
                         {detailData.lead.instagramHandle}
                         {detailData.lead.instagramFollowers
                           ? ` (${detailData.lead.instagramFollowers.toLocaleString("en-IN")} followers)`
                           : ""}
-                      </span>
+                      </a>
+                    </div>
+                  )}
+                  {detailData.lead.googleMapsLink?.trim() && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-[#FF5C1C]" />
+                      <a
+                        href={detailData.lead.googleMapsLink.trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#FF5C1C] font-medium hover:underline"
+                      >
+                        Open Google Maps
+                      </a>
                     </div>
                   )}
                 </div>

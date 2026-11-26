@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { findUserById, requireAdmin, toPublicUser } from "@/lib/auth";
 import { updateUser } from "@/lib/repo";
 import { logActivity } from "@/lib/activity";
+import { createNotification } from "@/lib/notifications";
 
 export async function PATCH(
   request: NextRequest,
@@ -24,6 +25,18 @@ export async function PATCH(
   if (typeof body.isActive === "boolean") {
     patch.isActive = body.isActive;
     actions.push(body.isActive ? "activated" : "deactivated");
+  }
+
+  if (
+    body.approvalStatus === "Approved" ||
+    body.approvalStatus === "Rejected" ||
+    body.approvalStatus === "Pending"
+  ) {
+    patch.approvalStatus = body.approvalStatus;
+    actions.push(`marked ${body.approvalStatus}`);
+    if (body.rejectionReason !== undefined) {
+      patch.rejectionReason = String(body.rejectionReason).trim();
+    }
   }
 
   if (typeof body.newPassword === "string" && body.newPassword.trim().length >= 4) {
@@ -50,6 +63,27 @@ export async function PATCH(
   const updated = await updateUser(id, patch);
   if (!updated) {
     return NextResponse.json({ error: "Failed to update caller" }, { status: 500 });
+  }
+
+  if (body.approvalStatus === "Approved") {
+    await createNotification({
+      recipientId: id,
+      title: "Account Approved!",
+      message:
+        "Welcome to Creightweb! Your account is now verified and approved. You can start calling leads.",
+      type: "alert",
+      entityId: id,
+    });
+  } else if (body.approvalStatus === "Rejected") {
+    await createNotification({
+      recipientId: id,
+      title: "Application Not Approved",
+      message:
+        body.rejectionReason ||
+        "Your application was not approved. Please contact Creightweb on WhatsApp.",
+      type: "alert",
+      entityId: id,
+    });
   }
 
   await logActivity({

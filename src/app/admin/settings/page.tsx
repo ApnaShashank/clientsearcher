@@ -19,6 +19,13 @@ export default function AdminSettingsPage() {
   const [cities, setCities] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
+  const [contactPhone, setContactPhone] = useState("8808108802");
+  const [contactWhatsapp, setContactWhatsapp] = useState("8808108802");
+  const [contactEmail, setContactEmail] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [otherSocials, setOtherSocials] = useState("");
   const [newCity, setNewCity] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [newService, setNewService] = useState("");
@@ -29,6 +36,13 @@ export default function AdminSettingsPage() {
       setCities(data.settings.cities);
       setCategories(data.settings.categories);
       setServices(data.settings.servicesToPitch);
+      setContactPhone(data.settings.contactPhone || "8808108802");
+      setContactWhatsapp(data.settings.contactWhatsapp || "8808108802");
+      setContactEmail(data.settings.contactEmail || "");
+      setInstagramUrl(data.settings.instagramUrl || "");
+      setFacebookUrl(data.settings.facebookUrl || "");
+      setLinkedinUrl(data.settings.linkedinUrl || "");
+      setOtherSocials(data.settings.otherSocials || "");
     }
   }, [data]);
 
@@ -42,6 +56,13 @@ export default function AdminSettingsPage() {
           cities,
           categories,
           servicesToPitch: services,
+          contactPhone,
+          contactWhatsapp,
+          contactEmail,
+          instagramUrl,
+          facebookUrl,
+          linkedinUrl,
+          otherSocials,
         }),
       });
       if (!res.ok) {
@@ -49,6 +70,7 @@ export default function AdminSettingsPage() {
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["crm-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["public-showcase"] });
       toast.success("Settings saved");
     } catch {
       toast.error("Network error while saving settings");
@@ -167,6 +189,77 @@ export default function AdminSettingsPage() {
         setNewService,
         "Add a service (e.g. SEO)"
       )}
+
+      <div className="crm-card p-6 space-y-4">
+        <h2 className="text-base font-bold">
+          Creightweb Contact &amp; Social Handles
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              Phone Number
+            </label>
+            <input
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              WhatsApp Number
+            </label>
+            <input
+              value={contactWhatsapp}
+              onChange={(e) => setContactWhatsapp(e.target.value)}
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              Contact Email
+            </label>
+            <input
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              Instagram URL
+            </label>
+            <input
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+              placeholder="https://instagram.com/creightweb"
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              Facebook URL
+            </label>
+            <input
+              value={facebookUrl}
+              onChange={(e) => setFacebookUrl(e.target.value)}
+              placeholder="https://facebook.com/creightweb"
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#737370] mb-1">
+              LinkedIn URL
+            </label>
+            <input
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
+              placeholder="https://linkedin.com/company/creightweb"
+              className="w-full bg-[#F9F9F7] border border-[#E2E2DC] rounded-xl px-3.5 py-2 text-sm"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

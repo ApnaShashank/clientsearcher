@@ -9,9 +9,14 @@ import {
   ActivityLog,
   AppSettings,
   AppNotification,
+  ShowcaseItem,
+  PricingRow,
   DEFAULT_CITIES,
   DEFAULT_CATEGORIES,
   DEFAULT_SERVICES_TO_PITCH,
+  DEFAULT_TRAINING_VIDEO_URL,
+  DEFAULT_NEGOTIATION_RULES,
+  DEFAULT_PRICING_ROWS,
 } from "@/types/crm";
 
 const uri = process.env.MONGODB_URI;
@@ -24,6 +29,8 @@ export interface InMemoryStore {
   adminTasks: AdminTask[];
   activities: ActivityLog[];
   notifications: AppNotification[];
+  showcase: ShowcaseItem[];
+  pricing: PricingRow[];
   settings: AppSettings;
   seeded: boolean;
 }
@@ -46,11 +53,22 @@ function getMemoryStore(): InMemoryStore {
       adminTasks: [],
       activities: [],
       notifications: [],
+      showcase: [],
+      pricing: [...DEFAULT_PRICING_ROWS],
       settings: {
         id: "default",
         cities: [...DEFAULT_CITIES],
         categories: [...DEFAULT_CATEGORIES],
         servicesToPitch: [...DEFAULT_SERVICES_TO_PITCH],
+        contactPhone: "8808108802",
+        contactWhatsapp: "8808108802",
+        contactEmail: "contact@creightweb.com",
+        instagramUrl: "",
+        facebookUrl: "",
+        linkedinUrl: "",
+        otherSocials: "",
+        trainingVideoUrl: DEFAULT_TRAINING_VIDEO_URL,
+        negotiationRules: [...DEFAULT_NEGOTIATION_RULES],
         updatedAt: new Date().toISOString(),
       },
       seeded: false,
@@ -150,8 +168,23 @@ export async function ensureSeeded(): Promise<void> {
       cities: [...DEFAULT_CITIES],
       categories: [...DEFAULT_CATEGORIES],
       servicesToPitch: [...DEFAULT_SERVICES_TO_PITCH],
+      contactPhone: "8808108802",
+      contactWhatsapp: "8808108802",
+      contactEmail: "contact@creightweb.com",
+      instagramUrl: "",
+      facebookUrl: "",
+      linkedinUrl: "",
+      otherSocials: "",
+      trainingVideoUrl: DEFAULT_TRAINING_VIDEO_URL,
+      negotiationRules: [...DEFAULT_NEGOTIATION_RULES],
       updatedAt: new Date().toISOString(),
     });
+  }
+
+  const pricingCol = db.collection<PricingRow>("pricing");
+  const pricingCount = await pricingCol.countDocuments({});
+  if (pricingCount === 0) {
+    await pricingCol.insertMany(DEFAULT_PRICING_ROWS.map((r) => ({ ...r })));
   }
 
   const usersCol = db.collection<User>("users");
@@ -207,6 +240,8 @@ export async function getCollection<T extends Document>(
     | "adminTasks"
     | "activities"
     | "notifications"
+    | "showcase"
+    | "pricing"
     | "settings"
 ): Promise<{ col: Collection<T> | null; memory: InMemoryStore }> {
   await ensureSeeded();

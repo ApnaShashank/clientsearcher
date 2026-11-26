@@ -13,6 +13,8 @@ import {
   FileBarChart2,
   CheckSquare,
   Settings,
+  Briefcase,
+  BookOpen,
   LogOut,
   Plus,
   Menu,
@@ -31,6 +33,8 @@ const NAV_ITEMS = [
   { href: "/admin/callers", label: "Callers", icon: PhoneCall },
   { href: "/admin/history", label: "History", icon: History },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart2 },
+  { href: "/admin/showcase", label: "Showcase", icon: Briefcase },
+  { href: "/admin/guide", label: "Guide & Pricing", icon: BookOpen },
   { href: "/admin/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

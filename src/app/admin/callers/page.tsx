@@ -2,7 +2,15 @@
 
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
+import {
+  UserPlus,
+  KeyRound,
+  ShieldCheck,
+  ShieldOff,
+  CheckCircle2,
+  XCircle,
+  FileText,
+} from "lucide-react";
 import { AppSettings, PublicUser } from "@/types/crm";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Skeleton, Spinner } from "@/components/ui/Skeleton";
@@ -49,6 +57,7 @@ export default function AdminCallersPage() {
   const [saving, setSaving] = useState(false);
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [resetId, setResetId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
@@ -147,7 +156,38 @@ export default function AdminCallersPage() {
     }
   }
 
-  const callers = callersData?.callers || [];
+  async function handleApproval(
+    caller: CallerWithStats,
+    approvalStatus: "Approved" | "Rejected"
+  ) {
+    let rejectionReason = "";
+    if (approvalStatus === "Rejected") {
+      rejectionReason =
+        prompt("Optional reason for rejection:") || "Application not approved.";
+    }
+    setApprovingId(caller.id);
+    try {
+      const res = await fetch(`/api/admin/callers/${caller.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus, rejectionReason }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to update approval status");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-callers"] });
+      toast.success(`${caller.name} marked ${approvalStatus}`);
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  const allCallers = callersData?.callers || [];
+  const pendingCallers = allCallers.filter(
+    (c) => c.approvalStatus === "Pending"
+  );
+  const callers = allCallers.filter((c) => c.approvalStatus !== "Pending");
 
   return (
     <div className="space-y-6">
@@ -279,6 +319,109 @@ export default function AdminCallersPage() {
             </button>
           </div>
         </form>
+      )}
+
+      {pendingCallers.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#FF5C1C]">
+            Pending Verification ({pendingCallers.length})
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {pendingCallers.map((c) => (
+              <div
+                key={c.id}
+                className="crm-card p-5 border-[#FFD3C0] bg-[#FFFDFB] space-y-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-bold">{c.name}</h3>
+                    <p className="text-xs text-[#737370]">
+                      @{c.username} · {c.phone}
+                      {c.email ? ` · ${c.email}` : ""}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    label={c.agreementSigned ? "Agreement Signed" : "No Signature"}
+                  />
+                </div>
+
+                <div className="bg-[#F9F9F7] rounded-2xl p-3.5 text-xs space-y-1">
+                  <div>
+                    <strong>Address:</strong>{" "}
+                    {c.fullAddress || c.homeCity || "-"}
+                  </div>
+                  <div>
+                    <strong>Preferred Calling Area:</strong>{" "}
+                    {c.preferredCallCityArea || c.homeCity}
+                  </div>
+                  <div>
+                    <strong>ID Proof:</strong> {c.idProofType || "-"} ·{" "}
+                    <span className="font-mono">{c.idProofNumber || "-"}</span>
+                  </div>
+                  <div>
+                    <strong>Experience / Occupation:</strong>{" "}
+                    {c.workExperience || "-"} / {c.currentOccupation || "-"}
+                  </div>
+                  {c.agreementSignedAt && (
+                    <div>
+                      <strong>Signed At:</strong>{" "}
+                      {new Date(c.agreementSignedAt).toLocaleString("en-IN")}
+                    </div>
+                  )}
+                </div>
+
+                {c.signatureDataUrl && (
+                  <div className="bg-white border border-[#EBEBE7] rounded-2xl p-2 flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-[#737370] pl-2">
+                      Digital Signature:
+                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={c.signatureDataUrl}
+                      alt="Signature"
+                      className="h-12 object-contain"
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F2F2EE]">
+                  <a
+                    href={`/api/admin/callers/${c.id}/agreement-pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-pill-light px-3.5 py-1.5 text-xs inline-flex items-center gap-1.5"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Agreement PDF
+                  </a>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={approvingId === c.id}
+                      onClick={() => handleApproval(c, "Rejected")}
+                      className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#FEECEC] text-[#C92A2A] inline-flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      Reject
+                    </button>
+                    <button
+                      disabled={approvingId === c.id}
+                      onClick={() => handleApproval(c, "Approved")}
+                      className="btn-pill-dark px-4 py-1.5 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {approvingId === c.id ? (
+                        <Spinner className="w-3.5 h-3.5" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4ADE80]" />
+                      )}
+                      Approve Caller
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {isLoading ? (

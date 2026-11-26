@@ -95,6 +95,13 @@ export function CallCardFlow({
     waPhone,
     `Namaste ${lead.ownerName || lead.businessName} ji, Creightweb se baat kar raha hoon.`
   );
+  const mapsHref = lead.googleMapsLink?.trim() || "";
+  const igRaw = lead.instagramHandle?.trim() || "";
+  const igHref = igRaw
+    ? igRaw.startsWith("http")
+      ? igRaw
+      : `https://instagram.com/${igRaw.replace(/^@/, "")}`
+    : "";
 
   return (
     <div className="space-y-4">
@@ -174,12 +181,39 @@ export function CallCardFlow({
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-pill-light py-4 text-sm inline-flex items-center justify-center gap-1.5 border-[#D7F0DF] bg-[#F2FBF5] text-[#12804A] font-semibold"
+            className="btn-pill-light py-4 text-sm inline-flex items-center justify-center gap-1.5 border-[#D7F0DF] bg-[#F2FBF5] text-[#12804A] font-semibold active:scale-[0.98]"
           >
             <MessageCircle className="w-5 h-5" />
             <span>WhatsApp</span>
           </a>
         </div>
+
+        {(mapsHref || igHref) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {mapsHref && (
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-pill-light px-3.5 py-2 text-xs inline-flex items-center gap-1.5 active:scale-[0.98]"
+              >
+                <MapPin className="w-3.5 h-3.5 text-[#FF5C1C]" />
+                <span>Maps</span>
+              </a>
+            )}
+            {igHref && (
+              <a
+                href={igHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-pill-light px-3.5 py-2 text-xs inline-flex items-center gap-1.5 active:scale-[0.98]"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#FF5C1C]" />
+                <span>Instagram</span>
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* One-Tap Outcome Card */}

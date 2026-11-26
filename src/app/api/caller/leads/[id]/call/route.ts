@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireCaller } from "@/lib/auth";
+import { requireApprovedCaller } from "@/lib/auth";
 import { getCollection } from "@/lib/db";
 import {
   getLeadById,
@@ -16,7 +16,7 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireCaller();
+  const auth = await requireApprovedCaller();
   if (auth.error) return auth.error;
 
   const { id } = await context.params;

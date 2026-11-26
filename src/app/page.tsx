@@ -1,210 +1,520 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
-  Layers,
   PhoneCall,
-  BarChart3,
+  IndianRupee,
   CheckCircle2,
+  ExternalLink,
+  Smartphone,
   ShieldCheck,
+  Sparkles,
+  FileCheck2,
+  HelpCircle,
+  MessageCircle,
+  Mail,
 } from "lucide-react";
+import { ShowcaseItem } from "@/types/crm";
+
+interface PublicData {
+  showcase: ShowcaseItem[];
+  contact: {
+    phone: string;
+    whatsapp: string;
+    email: string;
+    instagramUrl: string;
+    facebookUrl: string;
+    linkedinUrl: string;
+    otherSocials: string;
+  };
+}
 
 export default function LandingPage() {
+  const { data } = useQuery<PublicData>({
+    queryKey: ["public-showcase"],
+    queryFn: async () => (await fetch("/api/public/showcase")).json(),
+    staleTime: 60_000,
+  });
+
+  const showcase = data?.showcase || [];
+  const contact = data?.contact || {
+    phone: "8808108802",
+    whatsapp: "8808108802",
+    email: "contact@creightweb.com",
+    instagramUrl: "",
+    facebookUrl: "",
+    linkedinUrl: "",
+    otherSocials: "",
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F3] text-[#111111] flex flex-col">
-      {/* Top Navbar */}
-      <header className="max-w-6xl w-full mx-auto px-5 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] text-white font-bold text-base flex items-center justify-center">
-            C
+      {/* Top Bar */}
+      <header className="sticky top-0 z-20 bg-[#F5F5F3]/90 backdrop-blur-md border-b border-[#EBEBE7]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-[#FF5C1C] text-white font-bold text-base flex items-center justify-center shrink-0">
+              C
+            </div>
+            <span className="font-bold text-base sm:text-lg tracking-tight">
+              Creightweb
+            </span>
           </div>
-          <span className="font-bold text-lg tracking-tight">
-            Creightweb Calling CRM
-          </span>
-        </div>
-
-        <Link
-          href="/login"
-          className="btn-pill-dark px-6 py-2.5 text-sm inline-flex items-center gap-2"
-        >
-          <span>Login</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </header>
-
-      {/* Hero Section */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 pt-8 pb-16 space-y-14">
-        <section className="text-center max-w-3xl mx-auto space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#EBEBE7] text-xs font-semibold text-[#737370]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#FF5C1C]" />
-            <span>Built for Website-Selling Agencies</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-[#111111]">
-            Assign local leads. Call in one tap. Close more websites.
-          </h1>
-
-          <p className="text-base sm:text-lg text-[#737370] max-w-2xl mx-auto">
-            A calm, mobile-first Calling CRM for Creightweb. Admin imports and
-            schedules daily batches; telecallers open their phone and call
-            straight through with zero clutter.
-          </p>
-
-          <div className="pt-2">
+          <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="btn-pill-orange px-8 py-3.5 text-base inline-flex items-center gap-2 shadow-[0_8px_24px_rgba(255,92,28,0.28)]"
+              className="btn-pill-light px-4 py-2 text-xs sm:text-sm"
             >
-              <span>Login to Workspace</span>
+              Login
+            </Link>
+            <Link
+              href="/apply"
+              className="btn-pill-dark px-4 sm:px-5 py-2 text-xs sm:text-sm inline-flex items-center gap-1.5"
+            >
+              <span>Apply Now</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-16">
+        {/* 1. Hero */}
+        <section className="text-center max-w-3xl mx-auto space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EBEBE7] text-xs font-semibold text-[#111111]">
+            <IndianRupee className="w-3.5 h-3.5 text-[#FF5C1C]" />
+            <span>₹15,000 – ₹20,000 / month + Performance Incentives</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08]">
+            Work From Home — Calling Job
+          </h1>
+
+          <p className="text-base sm:text-lg text-[#737370] max-w-2xl mx-auto leading-relaxed">
+            Join Creightweb as a Remote Telecaller. Call local businesses from
+            your smartphone using our simple CRM app, pitch websites, and earn a
+            fixed monthly salary plus incentives.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/apply"
+              className="btn-pill-orange px-8 py-4 text-base inline-flex items-center gap-2 shadow-[0_8px_24px_rgba(255,92,28,0.28)]"
+            >
+              <span>Apply Now</span>
               <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/login"
+              className="btn-pill-light px-6 py-4 text-sm font-semibold"
+            >
+              Already Registered? Login
             </Link>
           </div>
         </section>
 
-        {/* 3 Feature Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="crm-card p-6 space-y-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#FFF0EA] text-[#FF5C1C] flex items-center justify-center">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold">Smart lead assignment</h2>
-            <p className="text-sm text-[#737370] leading-relaxed">
-              Filter unassigned leads by city, area, and category. Schedule
-              tomorrow&apos;s batch with exact visibility time and duplicate
-              phone protection.
-            </p>
+        {/* 2. About Creightweb */}
+        <section className="crm-card p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="md:col-span-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              About Creightweb
+            </span>
+            <h2 className="text-2xl font-bold mt-1">
+              We build websites for local Indian businesses.
+            </h2>
           </div>
+          <p className="md:col-span-8 text-sm sm:text-base text-[#737370] leading-relaxed">
+            Creightweb helps restaurants, clinics, hospitals, salons, gyms,
+            coaching institutes, and local shops go online with modern,
+            affordable websites, digital menus, Google Business setups, and
+            social media. Our telecallers connect with business owners over the
+            phone and help them see how a professional website brings more
+            customers.
+          </p>
+        </section>
 
-          <div className="crm-card p-6 space-y-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#111111] text-white flex items-center justify-center">
-              <PhoneCall className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold">One-tap calling</h2>
-            <p className="text-sm text-[#737370] leading-relaxed">
-              Callers see one lead at a time on their phone with a Hinglish
-              pitch hint, thumb-sized Call &amp; WhatsApp buttons, and one-tap
-              outcomes.
-            </p>
+        {/* 3. What you will do */}
+        <section className="space-y-5">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Daily Work
+            </span>
+            <h2 className="text-2xl font-bold mt-1">What you will do</h2>
           </div>
-
-          <div className="crm-card p-6 space-y-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#E6F9EE] text-[#12804A] flex items-center justify-center">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold">Full tracking</h2>
-            <p className="text-sm text-[#737370] leading-relaxed">
-              Every call attempt, callback, and lead recycle is logged. Export
-              daily caller PDFs and agency-wide CSV, Excel, or PDF reports.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                title: "Daily Calling from App",
+                desc: "Open the Creightweb app on your phone, see your daily leads with a ready pitch hint, and tap Call Now.",
+                icon: PhoneCall,
+              },
+              {
+                title: "One-Tap Outcomes",
+                desc: "After every call, tap the honest outcome (Interested, Callback, Not Interested, etc.) in one tap.",
+                icon: CheckCircle2,
+              },
+              {
+                title: "Follow-ups",
+                desc: "Call back interested owners on their scheduled date from your Follow-ups tab.",
+                icon: Sparkles,
+              },
+              {
+                title: "Daily PDF Report",
+                desc: "Download your daily work summary PDF in one click and share it on WhatsApp.",
+                icon: FileCheck2,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.title} className="crm-card p-5 space-y-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FFF0EA] text-[#FF5C1C] flex items-center justify-center">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base">{item.title}</h3>
+                  <p className="text-xs sm:text-sm text-[#737370] leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* Dashboard Preview Mock */}
-        <section className="crm-card p-5 sm:p-8 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EBEBE7] pb-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-[#FF5C1C]">
-                Live Agency Preview
-              </div>
-              <h3 className="text-lg font-bold mt-0.5">
-                Creightweb Admin &amp; Caller Workspace
-              </h3>
-            </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-[#737370] font-medium">
-              Desktop Admin · 390px Mobile Caller
+        {/* 4. What you get */}
+        <section className="space-y-5">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Benefits
             </span>
+            <h2 className="text-2xl font-bold mt-1">What you get</h2>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Admin Mock */}
-            <div className="lg:col-span-8 bg-[#F9F9F7] rounded-3xl p-5 border border-[#EBEBE7] space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-white rounded-2xl p-3.5 border border-[#EBEBE7]">
-                  <div className="text-[11px] text-[#737370]">Total Leads</div>
-                  <div className="text-2xl font-bold mt-1">1,420</div>
-                </div>
-                <div className="bg-[#FF5C1C] text-white rounded-2xl p-3.5">
-                  <div className="text-[11px] text-white/85">Calls Today</div>
-                  <div className="text-2xl font-bold mt-1">148</div>
-                </div>
-                <div className="bg-white rounded-2xl p-3.5 border border-[#EBEBE7]">
-                  <div className="text-[11px] text-[#737370]">Interested</div>
-                  <div className="text-2xl font-bold text-[#12804A] mt-1">
-                    29
-                  </div>
-                </div>
-                <div className="bg-white rounded-2xl p-3.5 border border-[#EBEBE7]">
-                  <div className="text-[11px] text-[#737370]">Won Month</div>
-                  <div className="text-2xl font-bold mt-1">12</div>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                title: "Fixed Salary ₹15,000 – ₹20,000",
+                desc: "Monthly fixed salary based on your role and experience.",
+                accent: true,
+              },
+              {
+                title: "Performance Incentives",
+                desc: "Earn extra money for interested leads, fixed meetings, and closed clients.",
+              },
+              {
+                title: "Ready-Made Business Leads",
+                desc: "No searching needed — verified local business numbers are delivered to your app daily.",
+              },
+              {
+                title: "Demo Websites & Portfolio",
+                desc: "Show live Creightweb websites to clients right from your phone during the call.",
+              },
+              {
+                title: "Full Training & Pricing Guide",
+                desc: "Step-by-step video training and clear rate cards so you always know what to say.",
+              },
+              {
+                title: "100% Work From Home",
+                desc: "Work comfortably from home with your smartphone and internet connection.",
+              },
+            ].map((b) => (
+              <div
+                key={b.title}
+                className={`rounded-3xl p-5 space-y-1.5 ${
+                  b.accent ? "bg-[#FF5C1C] text-white" : "crm-card"
+                }`}
+              >
+                <h3 className="font-bold text-base">{b.title}</h3>
+                <p
+                  className={`text-xs sm:text-sm leading-relaxed ${
+                    b.accent ? "text-white/90" : "text-[#737370]"
+                  }`}
+                >
+                  {b.desc}
+                </p>
               </div>
+            ))}
+          </div>
+        </section>
 
-              <div className="bg-white rounded-2xl p-4 border border-[#EBEBE7] space-y-2.5">
-                <div className="text-xs font-bold">Today&apos;s Caller Queue</div>
-                {[
-                  { name: "Priya Verma", city: "Lucknow", done: "34 / 40", int: 8 },
-                  { name: "Aman Yadav", city: "Azamgarh", done: "28 / 40", int: 6 },
-                ].map((row) => (
-                  <div
-                    key={row.name}
-                    className="flex items-center justify-between text-xs py-1.5 border-b last:border-0 border-[#F2F2EE]"
-                  >
-                    <span className="font-semibold">
-                      {row.name}{" "}
-                      <span className="font-normal text-[#737370]">
-                        · {row.city}
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[#737370]">{row.done}</span>
-                      <span className="font-bold text-[#FF5C1C]">
-                        {row.int} interested
-                      </span>
+        {/* 5. Our Work (Dynamic Showcase) */}
+        <section className="space-y-5">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+                Portfolio
+              </span>
+              <h2 className="text-2xl font-bold mt-1">Our Work</h2>
+            </div>
+          </div>
+          {showcase.length === 0 ? (
+            <div className="crm-card p-8 text-center text-sm text-[#737370]">
+              Our latest client websites and live demos are showcased inside the
+              Creightweb panel.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {showcase.map((item) => (
+                <div
+                  key={item.id}
+                  className="crm-card overflow-hidden flex flex-col justify-between"
+                >
+                  {item.previewImage && (
+                    <div className="aspect-video bg-[#F9F9F7] overflow-hidden border-b border-[#EBEBE7]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.previewImage}
+                        alt={item.businessName}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+                  )}
+                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                    <div className="flex items-start gap-3">
+                      {item.logoImage && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={item.logoImage}
+                          alt=""
+                          className="w-10 h-10 rounded-xl object-cover border border-[#EBEBE7] shrink-0"
+                        />
+                      )}
+                      <div>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F3] text-[#737370]">
+                          {item.category}
+                        </span>
+                        <h3 className="font-bold text-base mt-1">
+                          {item.businessName}
+                        </h3>
+                        <p className="text-xs text-[#737370]">{item.title}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={item.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-pill-light w-full py-2 text-xs inline-flex items-center justify-center gap-1.5"
+                    >
+                      <span>View Live Website</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+          )}
+        </section>
 
-            {/* Mobile Caller Mock */}
-            <div className="lg:col-span-4 bg-white rounded-3xl p-5 border-2 border-[#111111] space-y-3.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold">12 of 40 done today</span>
-                <span className="text-[#FF5C1C] font-bold">30%</span>
-              </div>
-              <div className="h-2 bg-[#F2F2EE] rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-[#FF5C1C] rounded-full" />
-              </div>
-              <div className="pt-1">
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-[#F5F5F3] text-[#737370]">
-                  Restaurant
-                </span>
-                <div className="text-base font-bold mt-1">
-                  Royal Spice Kitchen
-                </div>
-                <div className="text-xs text-[#737370]">
-                  Gomti Nagar, Lucknow
-                </div>
-              </div>
-              <div className="bg-[#FFF0EA] rounded-2xl p-2.5 text-[11px] font-medium">
-                No website hai · Instagram active hai → New Website + Social Media pitch karo
-              </div>
-              <div className="btn-pill-orange py-2.5 text-center text-xs font-bold">
-                CALL NOW
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-[#12804A] font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>One-tap outcomes &amp; auto-advance</span>
-              </div>
-            </div>
+        {/* 6. Who can apply */}
+        <section className="crm-card p-6 sm:p-8 space-y-5">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Eligibility
+            </span>
+            <h2 className="text-2xl font-bold mt-1">
+              Who can apply? (No degree required)
+            </h2>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: Smartphone,
+                text: "Smartphone + reliable internet connection",
+              },
+              {
+                icon: PhoneCall,
+                text: "Clear Hindi / Hinglish speaking confidence",
+              },
+              {
+                icon: CheckCircle2,
+                text: "Basic smartphone & WhatsApp skills",
+              },
+              {
+                icon: ShieldCheck,
+                text: "Honest, punctual & regular in daily work",
+              },
+            ].map((req) => {
+              const Icon = req.icon;
+              return (
+                <div
+                  key={req.text}
+                  className="bg-[#F9F9F7] rounded-2xl p-4 flex items-start gap-3"
+                >
+                  <Icon className="w-5 h-5 text-[#FF5C1C] shrink-0 mt-0.5" />
+                  <span className="text-sm font-medium">{req.text}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 7. How it works (4 steps) */}
+        <section className="space-y-5">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Onboarding Process
+            </span>
+            <h2 className="text-2xl font-bold mt-1">How it works</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                step: "01",
+                title: "Apply & fill details",
+                desc: "Create your username, password, and enter your profile & ID proof.",
+              },
+              {
+                step: "02",
+                title: "Sign Agreement",
+                desc: "Read the simple English + Hindi agreement and sign digitally on screen.",
+              },
+              {
+                step: "03",
+                title: "Verification & Approval",
+                desc: "Send your signed PDF on WhatsApp; Creightweb verifies and approves your account.",
+              },
+              {
+                step: "04",
+                title: "Start Calling",
+                desc: "Log in to your approved caller panel, watch the training video, and start calling.",
+              },
+            ].map((s) => (
+              <div key={s.step} className="crm-card p-5 space-y-2">
+                <div className="text-xs font-bold text-[#FF5C1C]">
+                  STEP {s.step}
+                </div>
+                <h3 className="font-bold text-base">{s.title}</h3>
+                <p className="text-xs sm:text-sm text-[#737370]">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 8. FAQ */}
+        <section className="space-y-5">
+          <div className="flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-[#FF5C1C]" />
+            <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                q: "Is any registration fee or security deposit charged?",
+                a: "NO. Joining Creightweb is 100% free. Never pay anyone for this job.",
+              },
+              {
+                q: "When and how is salary paid?",
+                a: "Salary ₹15,000–₹20,000 + performance incentives are paid monthly directly to your bank/UPI.",
+              },
+              {
+                q: "What are the work hours?",
+                a: "Flexible daytime calling hours (typically 10 AM – 6 PM) when local businesses are open.",
+              },
+              {
+                q: "What if I have no prior calling experience?",
+                a: "Freshers are welcome! Our Guide tab has a training video, pricing rules, and exact pitch hints for every lead.",
+              },
+            ].map((f) => (
+              <div key={f.q} className="crm-card p-5 space-y-1.5">
+                <h3 className="font-bold text-sm sm:text-base">{f.q}</h3>
+                <p className="text-xs sm:text-sm text-[#737370] leading-relaxed">
+                  {f.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA Banner */}
+        <section className="bg-[#111111] text-white rounded-3xl p-8 sm:p-10 text-center space-y-4">
+          <h2 className="text-2xl sm:text-3xl font-bold">
+            Ready to start earning from home?
+          </h2>
+          <p className="text-sm text-white/75 max-w-xl mx-auto">
+            Takes 3 minutes to apply and sign the digital agreement. Zero fees.
+          </p>
+          <Link
+            href="/apply"
+            className="btn-pill-orange px-8 py-3.5 text-sm inline-flex items-center gap-2"
+          >
+            <span>Apply Now</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </section>
       </main>
 
-      <footer className="max-w-6xl w-full mx-auto px-5 py-6 border-t border-[#EBEBE7] flex items-center justify-between text-xs text-[#737370]">
-        <span>© {new Date().getFullYear()} Creightweb Agency CRM</span>
-        <Link href="/login" className="font-semibold text-[#111111] hover:underline">
-          Agency Login
-        </Link>
+      {/* 9. Contact Footer */}
+      <footer className="bg-white border-t border-[#EBEBE7]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="font-bold text-base">Creightweb Agency</div>
+            <p className="text-xs text-[#737370] mt-0.5">
+              Websites &amp; Digital Growth for Local Businesses
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            {contact.phone && (
+              <a
+                href={`tel:${contact.phone}`}
+                className="btn-pill-light px-3.5 py-2 inline-flex items-center gap-1.5"
+              >
+                <PhoneCall className="w-3.5 h-3.5 text-[#FF5C1C]" />
+                <span>{contact.phone}</span>
+              </a>
+            )}
+            {contact.whatsapp && (
+              <a
+                href={`https://wa.me/91${contact.whatsapp.replace(/\D/g, "").slice(-10)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-pill-light px-3.5 py-2 inline-flex items-center gap-1.5 text-[#12804A]"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+            )}
+            {contact.email && (
+              <a
+                href={`mailto:${contact.email}`}
+                className="btn-pill-light px-3.5 py-2 inline-flex items-center gap-1.5"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>{contact.email}</span>
+              </a>
+            )}
+            {contact.instagramUrl && (
+              <a
+                href={contact.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#737370] hover:text-[#111111] font-medium"
+              >
+                Instagram
+              </a>
+            )}
+            {contact.facebookUrl && (
+              <a
+                href={contact.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#737370] hover:text-[#111111] font-medium"
+              >
+                Facebook
+              </a>
+            )}
+            {contact.linkedinUrl && (
+              <a
+                href={contact.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#737370] hover:text-[#111111] font-medium"
+              >
+                LinkedIn
+              </a>
+            )}
+          </div>
+        </div>
       </footer>
     </div>
   );

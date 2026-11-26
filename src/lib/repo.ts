@@ -6,9 +6,14 @@ import {
   AdminTask,
   ActivityLog,
   AppSettings,
+  ShowcaseItem,
+  PricingRow,
   DEFAULT_CITIES,
   DEFAULT_CATEGORIES,
   DEFAULT_SERVICES_TO_PITCH,
+  DEFAULT_TRAINING_VIDEO_URL,
+  DEFAULT_NEGOTIATION_RULES,
+  DEFAULT_PRICING_ROWS,
 } from "@/types/crm";
 import { getCollection, stripMongoId } from "./db";
 
@@ -19,24 +24,41 @@ export function makeId(prefix: string): string {
 // ── Settings ──────────────────────────────────────────────
 export async function getAppSettings(): Promise<AppSettings> {
   const { col, memory } = await getCollection<AppSettings>("settings");
+  const defaults = {
+    contactPhone: "8808108802",
+    contactWhatsapp: "8808108802",
+    contactEmail: "contact@creightweb.com",
+    instagramUrl: "",
+    facebookUrl: "",
+    linkedinUrl: "",
+    otherSocials: "",
+    trainingVideoUrl: DEFAULT_TRAINING_VIDEO_URL,
+    negotiationRules: [...DEFAULT_NEGOTIATION_RULES],
+  };
   if (col) {
     const doc = await col.findOne({ id: "default" });
-    if (doc) return stripMongoId(doc) as AppSettings;
+    if (doc) {
+      return {
+        ...defaults,
+        ...(stripMongoId(doc) as AppSettings),
+      };
+    }
     const fallback: AppSettings = {
       id: "default",
       cities: [...DEFAULT_CITIES],
       categories: [...DEFAULT_CATEGORIES],
       servicesToPitch: [...DEFAULT_SERVICES_TO_PITCH],
+      ...defaults,
       updatedAt: new Date().toISOString(),
     };
     await col.insertOne({ ...fallback });
     return fallback;
   }
-  return memory.settings;
+  return { ...defaults, ...memory.settings };
 }
 
 export async function updateAppSettings(
-  patch: Partial<Pick<AppSettings, "cities" | "categories" | "servicesToPitch">>
+  patch: Partial<Omit<AppSettings, "id" | "updatedAt">>
 ): Promise<AppSettings> {
   const current = await getAppSettings();
   const next: AppSettings = {
@@ -51,6 +73,104 @@ export async function updateAppSettings(
     memory.settings = next;
   }
   return next;
+}
+
+// ── Showcase ("Our Work") ─────────────────────────────────
+export async function getAllShowcase(): Promise<ShowcaseItem[]> {
+  const { col, memory } = await getCollection<ShowcaseItem>("showcase");
+  if (col) {
+    const docs = await col.find({}).sort({ createdAt: -1 }).toArray();
+    return docs.map((d) => stripMongoId(d) as ShowcaseItem);
+  }
+  return [...memory.showcase].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  );
+}
+
+export async function insertShowcaseItem(item: ShowcaseItem): Promise<void> {
+  const { col, memory } = await getCollection<ShowcaseItem>("showcase");
+  if (col) {
+    await col.insertOne({ ...item });
+  } else {
+    memory.showcase.unshift(item);
+  }
+}
+
+export async function updateShowcaseItem(
+  id: string,
+  patch: Partial<ShowcaseItem>
+): Promise<ShowcaseItem | null> {
+  const { col, memory } = await getCollection<ShowcaseItem>("showcase");
+  if (col) {
+    await col.updateOne({ id }, { $set: patch });
+    const doc = await col.findOne({ id });
+    return doc ? (stripMongoId(doc) as ShowcaseItem) : null;
+  }
+  const idx = memory.showcase.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  memory.showcase[idx] = { ...memory.showcase[idx], ...patch };
+  return memory.showcase[idx];
+}
+
+export async function deleteShowcaseItem(id: string): Promise<boolean> {
+  const { col, memory } = await getCollection<ShowcaseItem>("showcase");
+  if (col) {
+    const res = await col.deleteOne({ id });
+    return res.deletedCount > 0;
+  }
+  const len = memory.showcase.length;
+  memory.showcase = memory.showcase.filter((s) => s.id !== id);
+  return memory.showcase.length < len;
+}
+
+// ── Pricing / Guide ───────────────────────────────────────
+export async function getAllPricingRows(): Promise<PricingRow[]> {
+  const { col, memory } = await getCollection<PricingRow>("pricing");
+  if (col) {
+    const docs = await col.find({}).sort({ order: 1 }).toArray();
+    if (docs.length === 0) {
+      await col.insertMany(DEFAULT_PRICING_ROWS.map((r) => ({ ...r })));
+      return [...DEFAULT_PRICING_ROWS];
+    }
+    return docs.map((d) => stripMongoId(d) as PricingRow);
+  }
+  return [...memory.pricing].sort((a, b) => a.order - b.order);
+}
+
+export async function insertPricingRow(row: PricingRow): Promise<void> {
+  const { col, memory } = await getCollection<PricingRow>("pricing");
+  if (col) {
+    await col.insertOne({ ...row });
+  } else {
+    memory.pricing.push(row);
+  }
+}
+
+export async function updatePricingRow(
+  id: string,
+  patch: Partial<PricingRow>
+): Promise<PricingRow | null> {
+  const { col, memory } = await getCollection<PricingRow>("pricing");
+  if (col) {
+    await col.updateOne({ id }, { $set: patch });
+    const doc = await col.findOne({ id });
+    return doc ? (stripMongoId(doc) as PricingRow) : null;
+  }
+  const idx = memory.pricing.findIndex((r) => r.id === id);
+  if (idx === -1) return null;
+  memory.pricing[idx] = { ...memory.pricing[idx], ...patch };
+  return memory.pricing[idx];
+}
+
+export async function deletePricingRow(id: string): Promise<boolean> {
+  const { col, memory } = await getCollection<PricingRow>("pricing");
+  if (col) {
+    const res = await col.deleteOne({ id });
+    return res.deletedCount > 0;
+  }
+  const len = memory.pricing.length;
+  memory.pricing = memory.pricing.filter((r) => r.id !== id);
+  return memory.pricing.length < len;
 }
 
 // ── Leads ─────────────────────────────────────────────────

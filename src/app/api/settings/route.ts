@@ -17,11 +17,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const patch: {
-      cities?: string[];
-      categories?: string[];
-      servicesToPitch?: string[];
-    } = {};
+    const patch: Record<string, unknown> = {};
 
     if (Array.isArray(body.cities)) {
       patch.cities = Array.from(
@@ -41,12 +37,33 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    for (const k of [
+      "contactPhone",
+      "contactWhatsapp",
+      "contactEmail",
+      "instagramUrl",
+      "facebookUrl",
+      "linkedinUrl",
+      "otherSocials",
+      "trainingVideoUrl",
+    ] as const) {
+      if (body[k] !== undefined) {
+        patch[k] = String(body[k]).trim();
+      }
+    }
+
+    if (Array.isArray(body.negotiationRules)) {
+      patch.negotiationRules = body.negotiationRules
+        .map((r: unknown) => String(r).trim())
+        .filter(Boolean);
+    }
+
     const updated = await updateAppSettings(patch);
     await logActivity({
       actorId: auth.user.id,
       actorName: auth.user.name,
       actorRole: "admin",
-      action: "Updated CRM dropdown settings",
+      action: "Updated CRM settings",
       entityType: "settings",
       entityId: "default",
     });

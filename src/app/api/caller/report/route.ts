@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireCaller } from "@/lib/auth";
+import { requireApprovedCaller } from "@/lib/auth";
 import { getAllCallLogs } from "@/lib/repo";
 import { logActivity } from "@/lib/activity";
 import { generateBrandedPdf } from "@/lib/pdfReport";
 
 export async function GET(request: NextRequest) {
-  const auth = await requireCaller();
+  const auth = await requireApprovedCaller();
   if (auth.error) return auth.error;
 
   const { searchParams } = new URL(request.url);

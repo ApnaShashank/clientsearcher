@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findUserById, requireAdmin } from "@/lib/auth";
+import { findUserById, isCallerApproved, requireAdmin } from "@/lib/auth";
 import { getCollection, stripMongoId } from "@/lib/db";
 import { bulkAssignLeads, insertBatch, makeId } from "@/lib/repo";
 import { logActivity } from "@/lib/activity";
@@ -185,6 +185,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Selected caller not found." },
         { status: 404 }
+      );
+    }
+    if (!isCallerApproved(caller)) {
+      return NextResponse.json(
+        {
+          error: `Caller "${caller.name}" is ${caller.approvalStatus}. Only Approved callers can be assigned batches.`,
+        },
+        { status: 400 }
       );
     }
 

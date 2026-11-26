@@ -43,3 +43,15 @@
 - [x] **6.4 Responsive Caller app (desktop/laptop)**: Updated `CallerShell` and Caller pages with wide centered desktop layouts (`lg:max-w-6xl`, horizontal nav pills, 2-column Today queue + card, multi-column Follow-ups/Stats/Report) while keeping 390px mobile intact.
 - [x] **6.5 PWA "Download App"**: Added `manifest.webmanifest`, `icon-192.png`, `icon-512.png`, `sw.js` offline shell, and `DownloadAppButton` in both Admin and Caller panels.
 - [x] **6.6 In-app Notifications (both panels)**: Added `notifications` MongoDB collection, server-side event triggers (batch assigned/live/completed, due follow-ups, high-value outcomes, 24h untouched alert), `/api/notifications`, and `NotificationBell` in both headers.
+- [x] **6.7 Maps & Instagram quick links**: Added conditional `Maps` and `Instagram` buttons to Caller lead cards (`CallCardFlow`) and clickable Maps/Instagram links to Admin leads table and detail drawer.
+
+## Phase 7: Job Landing, Caller Registration, Digital Agreement, Approval Gate & Showcase
+- [x] **7.1 Data models & seeding**: Extended `User`, `AppSettings`, `ShowcaseItem`, and `PricingRow` in `src/types/crm.ts`, `src/lib/db.ts`, and `src/lib/repo.ts` with auto-seeded pricing & contact defaults.
+- [x] **7.2 Job Recruitment Landing Page (`/`)**: Rebuilt `src/app/page.tsx` as Creightweb Calling Job page (Hero ₹15k–₹20k, About, Daily Work, Benefits, dynamic Our Work, Who can apply, 4-step How it works, FAQ, Contact footer).
+- [x] **7.3 Caller Self-Registration (`/apply`) & Digital Agreement (`/caller/agreement`)**: Built `/apply`, `/api/auth/apply`, HTML5 canvas signature pad, English+Hindi clauses, Signed Agreement PDF (`src/lib/agreementPdf.ts`), and WhatsApp verification button.
+- [x] **7.4 Approval Gate & Admin Callers**: Locked Pending/Rejected callers to status screen, added Pending Verification review (profile, ID, signature, PDF, Approve/Reject) in `/admin/callers`, enforced Approved-only batch assignment & caller APIs, and wired notifications.
+- [x] **7.5 Showcase ("Our Work") & Contact Settings**: Built `/admin/showcase`, `/api/admin/showcase`, `/api/public/showcase`, editable contact/social fields in `/admin/settings`, and `/caller/work` tab.
+
+## Phase 7B: Guide, Pricing Manager & Training Video
+- [x] **7B.1 Admin Guide & Pricing Manager (`/admin/guide`)**: Built CRUD for pricing rows (seeded with 5 default rows), editable Hinglish negotiation rules, and Google Drive Training Video URL setting.
+- [x] **7B.2 Caller Guide Tab (`/caller/guide`)**: Embedded Drive training video preview, Price List cards with domain badges, Negotiation Rules, and Showcase shortcut (Approved callers only).

@@ -107,6 +107,11 @@ export async function requireAdmin(): Promise<
   return { user: res.user };
 }
 
+export function isCallerApproved(user: Pick<PublicUser, "approvalStatus">): boolean {
+  // Existing callers created before Phase 7 have undefined approvalStatus -> Approved
+  return !user.approvalStatus || user.approvalStatus === "Approved";
+}
+
 export async function requireCaller(): Promise<
   | { user: PublicUser; error?: never }
   | { user?: never; error: NextResponse }
@@ -117,6 +122,23 @@ export async function requireCaller(): Promise<
     return {
       error: NextResponse.json(
         { error: "Forbidden. Caller access required." },
+        { status: 403 }
+      ),
+    };
+  }
+  return { user: res.user };
+}
+
+export async function requireApprovedCaller(): Promise<
+  | { user: PublicUser; error?: never }
+  | { user?: never; error: NextResponse }
+> {
+  const res = await requireCaller();
+  if (res.error) return res;
+  if (!isCallerApproved(res.user)) {
+    return {
+      error: NextResponse.json(
+        { error: "Forbidden. Your account is pending verification." },
         { status: 403 }
       ),
     };

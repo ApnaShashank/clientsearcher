@@ -27,7 +27,7 @@ export async function getAppSettings(): Promise<AppSettings> {
   const defaults = {
     contactPhone: "8808108802",
     contactWhatsapp: "8808108802",
-    contactEmail: "contact@creightweb.com",
+    contactEmail: "shashank8808108802@gmail.com",
     instagramUrl: "",
     facebookUrl: "",
     linkedinUrl: "",

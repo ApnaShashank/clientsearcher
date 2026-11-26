@@ -20,7 +20,7 @@ export function BrandLogo({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/creightweb-logo.jpg"
+        src="/creightweb-logo.png"
         alt="Creightweb"
         className="w-full h-full object-cover scale-125"
       />

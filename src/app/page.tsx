@@ -46,7 +46,7 @@ export default function LandingPage() {
   const contact = data?.contact || {
     phone: "8808108802",
     whatsapp: "8808108802",
-    email: "contact@creightweb.com",
+    email: "shashank8808108802@gmail.com",
     instagramUrl: "",
     facebookUrl: "",
     linkedinUrl: "",
@@ -84,38 +84,37 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-14">
-        {/* 1. Hero — 2 columns on desktop; mobile stacks headline -> illustration -> buttons */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-          <div className="lg:col-span-6 space-y-4 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EBEBE7] text-xs font-semibold text-[#111111]">
+        {/* 1. Hero — centered hero-caller.png at reduced opacity behind hero text & buttons */}
+        <section className="relative overflow-hidden py-10 sm:py-16 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+            <Image
+              src="/illustrations/hero-caller.png"
+              alt="Creightweb remote telecaller working from home with headset and phone"
+              width={1200}
+              height={700}
+              priority
+              sizes="(max-width: 1024px) 100vw, 900px"
+              className="w-full max-w-3xl h-auto opacity-20 dark:opacity-15 object-contain"
+            />
+          </div>
+
+          <div className="relative z-10 text-center max-w-3xl mx-auto space-y-5">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 border border-[#EBEBE7] text-xs font-semibold text-[#111111]">
               <IndianRupee className="w-3.5 h-3.5 text-[#FF5C1C]" />
               <span>₹15,000 – ₹20,000 / month + Performance Incentives</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.08]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08]">
               Work From Home — Calling Job
             </h1>
 
-            <p className="text-base text-[#737370] max-w-xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-base sm:text-lg text-[#737370] max-w-2xl mx-auto leading-relaxed">
               Join Creightweb as a Remote Telecaller. Call local businesses from
               your smartphone using our simple CRM app, pitch websites, and
               earn a fixed monthly salary plus incentives.
             </p>
 
-            {/* Mobile illustration between headline/subtext and buttons */}
-            <div className="lg:hidden py-2">
-              <Image
-                src="/illustrations/hero-caller.png"
-                alt="Creightweb remote telecaller working from home with headset and phone"
-                width={1200}
-                height={700}
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="w-full h-auto max-w-md mx-auto"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
                 href="/apply"
                 className="btn-pill-orange px-8 py-4 text-base inline-flex items-center gap-2 shadow-[0_8px_24px_rgba(255,92,28,0.28)]"
@@ -131,23 +130,11 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
-
-          <div className="hidden lg:block lg:col-span-6">
-            <Image
-              src="/illustrations/hero-caller.png"
-              alt="Creightweb remote telecaller working from home with headset and phone"
-              width={1200}
-              height={700}
-              priority
-              sizes="50vw"
-              className="w-full h-auto"
-            />
-          </div>
         </section>
 
-        {/* 2. About Creightweb — text left, illustration right on desktop */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-6 crm-card p-6 sm:p-8 space-y-3">
+        {/* 2. About Creightweb — text left & about-businesses.png right inside the same card */}
+        <section className="crm-card p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-6 space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
               About Creightweb
             </span>
@@ -175,31 +162,19 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 3. What you will do — medium illustration at top next to heading */}
+        {/* 3. What you will do — daily-work-app.jpg reveals on hovering the cards */}
         <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
-                Daily Work
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold mt-1">
-                What you will do
-              </h2>
-              <p className="text-sm text-[#737370] mt-1 max-w-md">
-                Simple, guided daily calling directly from your phone — no
-                complicated spreadsheets.
-              </p>
-            </div>
-            <div className="w-44 sm:w-52 mx-auto sm:mx-0 shrink-0">
-              <Image
-                src="/illustrations/daily-work-app.jpg"
-                alt="Smartphone with Creightweb calling app and one-tap call button"
-                width={600}
-                height={600}
-                sizes="220px"
-                className="w-full h-auto rounded-3xl"
-              />
-            </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Daily Work
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold mt-1">
+              What you will do
+            </h2>
+            <p className="text-sm text-[#737370] mt-1 max-w-md">
+              Simple, guided daily calling directly from your phone — no
+              complicated spreadsheets.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -227,7 +202,10 @@ export default function LandingPage() {
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.title} className="crm-card p-5 space-y-2.5">
+                <div
+                  key={item.title}
+                  className="group relative crm-card p-5 space-y-2.5 overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C1C]"
+                >
                   <div className="w-10 h-10 rounded-2xl bg-[#FFF0EA] text-[#FF5C1C] flex items-center justify-center">
                     <Icon className="w-5 h-5" />
                   </div>
@@ -235,6 +213,16 @@ export default function LandingPage() {
                   <p className="text-xs sm:text-sm text-[#737370] leading-relaxed">
                     {item.desc}
                   </p>
+                  <div className="pointer-events-none absolute inset-0 bg-[#FFFFFF]/95 dark:bg-[#18181B]/95 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-3">
+                    <Image
+                      src="/illustrations/daily-work-app.jpg"
+                      alt="Smartphone with Creightweb calling app and one-tap call button"
+                      width={600}
+                      height={600}
+                      sizes="220px"
+                      className="w-40 h-auto rounded-2xl shadow-md"
+                    />
+                  </div>
                 </div>
               );
             })}

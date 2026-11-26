@@ -1,229 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
-import { serverState } from "@/lib/serverState";
-import { syncState, saveState } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { getAllCallLogs, getAllLeads, getAllUsers } from "@/lib/repo";
 
-export async function GET() {
-  await syncState();
-  const onlineCount = Math.max(1, Object.keys(serverState.onlineUsers).length);
-  return NextResponse.json({
-    users: serverState.users,
-    searchLogs: serverState.searchLogs,
-    activities: serverState.activities,
-    onlineUsers: onlineCount,
-    apiKeyUsage: serverState.apiKeyUsage,
-    customApiKeys: serverState.customApiKeys,
-    notifications: serverState.notifications || [],
-    forwardedLeads: serverState.forwardedLeads || []
-  });
+function isSameDay(iso: string | null | undefined, dayStr: string): boolean {
+  if (!iso) return false;
+  return iso.slice(0, 10) === dayStr;
 }
 
+export async function GET() {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
 
-export async function POST(request: NextRequest) {
-  try {
-    await syncState();
-    const { action, payload } = await request.json();
+  const [leads, callLogs, users] = await Promise.all([
+    getAllLeads(),
+    getAllCallLogs(),
+    getAllUsers(),
+  ]);
 
-    if (action === "updateKeys") {
-      serverState.customApiKeys = {
-        ...serverState.customApiKeys,
-        ...payload
-      };
-      
-      serverState.activities.unshift({
-        id: `act_${Date.now()}`,
-        leadId: "config",
-        leadName: "System Settings",
-        action: "Administrator updated customized API keys configuration",
-        timestamp: new Date().toISOString()
-      });
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const monthPrefix = todayStr.slice(0, 7); // YYYY-MM
 
-      await saveState("customApiKeys");
-      await saveState("activities");
-      return NextResponse.json({ success: true, customApiKeys: serverState.customApiKeys });
-    }
+  const totalLeads = leads.length;
+  const unassigned = leads.filter((l) => l.status === "Unassigned").length;
+  const assignedToday = leads.filter((l) => isSameDay(l.assignedAt, todayStr)).length;
+  const callsToday = callLogs.filter((c) => isSameDay(c.calledAt, todayStr)).length;
+  const interestedToday = callLogs.filter(
+    (c) =>
+      isSameDay(c.calledAt, todayStr) &&
+      (c.outcome === "Interested" || c.outcome === "Meeting Fixed")
+  ).length;
+  const followUpsDueToday = leads.filter(
+    (l) =>
+      l.status === "Callback" &&
+      l.followUpDate &&
+      l.followUpDate.slice(0, 10) <= todayStr
+  ).length;
+  const wonThisMonth = callLogs.filter(
+    (c) => c.outcome === "Won" && c.calledAt.slice(0, 7) === monthPrefix
+  ).length;
 
-    if (action === "updateUserPlan") {
-      const { userId, plan } = payload;
-      serverState.users = serverState.users.map(u => 
-        u.id === userId ? { ...u, plan } : u
-      );
-      await saveState("users");
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "updateUserProfile") {
-      const { userId, name, password } = payload;
-      serverState.users = serverState.users.map(u => 
-        u.id === userId ? { ...u, name, ...(password ? { password } : {}) } : u
-      );
-      
-      serverState.activities.unshift({
-        id: `act_${Date.now()}`,
-        leadId: "profile",
-        leadName: "User Profile Settings",
-        action: `User "${name}" updated their profile settings${password ? " (including password)" : ""}`,
-        timestamp: new Date().toISOString()
-      });
-      
-      await saveState("users");
-      await saveState("activities");
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "toggleBanUser") {
-      const { userId } = payload;
-      serverState.users = serverState.users.map(u => 
-        u.id === userId ? { ...u, isBanned: !u.isBanned } : u
-      );
-      await saveState("users");
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "deleteUser") {
-      const { userId } = payload;
-      serverState.users = serverState.users.filter(u => u.id !== userId);
-      await saveState("users");
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === "updateForwardedLeadStatus") {
-      const { leadId, status, notes } = payload;
-      if (!serverState.forwardedLeads) {
-        serverState.forwardedLeads = [];
-      }
-      const item = serverState.forwardedLeads.find(l => l.id === leadId);
-      if (item) {
-        const oldStatus = item.status;
-        item.status = status;
-        if (notes !== undefined) item.notes = notes;
-
-        if (status === "Approved" && oldStatus !== "Approved") {
-          item.rewardAmount = 500;
-          
-          // Find user who forwarded it (match by email/username)
-          const user = serverState.users.find(u => u.email.toLowerCase() === item.forwardedBy.toLowerCase() || u.id === item.forwardedBy);
-          if (user) {
-            user.pendingEarnings = (user.pendingEarnings || 0) + 500;
-            user.totalEarnings = (user.totalEarnings || 0) + 500;
-            user.withdrawalStatus = "None";
-
-            if (!serverState.systemNotifications) {
-              serverState.systemNotifications = [];
-            }
-            serverState.systemNotifications.unshift({
-              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-              recipientId: user.id,
-              title: "Lead Approved! 💰 Won 500 Rs",
-              message: `Congratulations! Your forwarded lead "${item.businessName}" was approved. 500 Rs added to your balance.`,
-              timestamp: new Date().toISOString(),
-              read: false,
-              senderName: "System Administrator"
-            });
-          }
-        }
-
-        serverState.activities.unshift({
-          id: `act_${Date.now()}`,
-          leadId: item.leadId,
-          leadName: item.businessName,
-          action: `Forwarded lead status updated to "${status}" by Administrator`,
-          timestamp: new Date().toISOString()
-        });
-      }
-      await saveState("forwardedLeads");
-      await saveState("users");
-      await saveState("systemNotifications");
-      await saveState("activities");
-      return NextResponse.json({ success: true, forwardedLeads: serverState.forwardedLeads });
-    }
-
-    if (action === "submitWithdrawalRequest") {
-      const { userId, qrCodeUrl } = payload;
-      serverState.users = serverState.users.map(u => {
-        if (u.id === userId) {
-          // Send admin notification
-          if (!serverState.systemNotifications) {
-            serverState.systemNotifications = [];
-          }
-          serverState.systemNotifications.unshift({
-            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            recipientId: "admin",
-            title: "Withdrawal Requested",
-            message: `User "${u.name}" requested withdrawal of pending earnings (${u.pendingEarnings || 500} Rs). QR Code uploaded.`,
-            timestamp: new Date().toISOString(),
-            read: false,
-            senderName: u.name
-          });
-
-          serverState.activities.unshift({
-            id: `act_${Date.now()}`,
-            leadId: "withdrawal",
-            leadName: `Withdrawal Request: ${u.name}`,
-            action: `User requested withdrawal of ${u.pendingEarnings || 500} Rs. QR code uploaded.`,
-            timestamp: new Date().toISOString()
-          });
-
-          return {
-            ...u,
-            withdrawalStatus: "Pending" as const,
-            qrCodeUrl
-          };
-        }
-        return u;
-      });
-
-      // Synchronize currentUser back if active
-      await saveState("users");
-      await saveState("systemNotifications");
-      await saveState("activities");
-      return NextResponse.json({ success: true, users: serverState.users });
-    }
-
-    if (action === "approveWithdrawal") {
-      const { userId, paymentReceiptUrl } = payload;
-      serverState.users = serverState.users.map(u => {
-        if (u.id === userId) {
-          const amountPaid = u.pendingEarnings || 0;
-          
-          if (!serverState.systemNotifications) {
-            serverState.systemNotifications = [];
-          }
-          serverState.systemNotifications.unshift({
-            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            recipientId: u.id,
-            title: "Withdrawal Approved! 🎉 Paid",
-            message: `Your withdrawal of ${amountPaid || 500} Rs has been approved and paid manually. Screenshot details available.`,
-            timestamp: new Date().toISOString(),
-            read: false,
-            senderName: "System Administrator"
-          });
-
-          serverState.activities.unshift({
-            id: `act_${Date.now()}`,
-            leadId: "withdrawal",
-            leadName: `Withdrawal Approved: ${u.name}`,
-            action: `Administrator approved withdrawal of ${amountPaid || 500} Rs for user ${u.name}.`,
-            timestamp: new Date().toISOString()
-          });
-
-          return {
-            ...u,
-            pendingEarnings: 0,
-            withdrawalStatus: "Paid" as const,
-            paymentReceiptUrl
-          };
-        }
-        return u;
-      });
-
-      await saveState("users");
-      await saveState("systemNotifications");
-      await saveState("activities");
-      return NextResponse.json({ success: true, users: serverState.users });
-    }
-
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  // 14-day calls chart
+  const chartDays: { date: string; label: string; calls: number; interested: number }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dStr = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    const dayCalls = callLogs.filter((c) => isSameDay(c.calledAt, dStr));
+    chartDays.push({
+      date: dStr,
+      label,
+      calls: dayCalls.length,
+      interested: dayCalls.filter(
+        (c) =>
+          c.outcome === "Interested" ||
+          c.outcome === "Meeting Fixed" ||
+          c.outcome === "Won"
+      ).length,
+    });
   }
+
+  // Per-caller table for today
+  const callers = users.filter((u) => u.role === "caller");
+  const callerToday = callers.map((caller) => {
+    const assignedLeads = leads.filter(
+      (l) =>
+        l.assignedTo === caller.id &&
+        (isSameDay(l.assignedAt, todayStr) || l.status === "Assigned")
+    );
+    const remaining = leads.filter(
+      (l) => l.assignedTo === caller.id && l.status === "Assigned"
+    ).length;
+    const todayLogs = callLogs.filter(
+      (c) => c.callerId === caller.id && isSameDay(c.calledAt, todayStr)
+    );
+    const interested = todayLogs.filter(
+      (c) =>
+        c.outcome === "Interested" ||
+        c.outcome === "Meeting Fixed" ||
+        c.outcome === "Won"
+    ).length;
+
+    return {
+      id: caller.id,
+      name: caller.name,
+      username: caller.username,
+      homeCity: caller.homeCity,
+      isActive: caller.isActive,
+      assigned: assignedLeads.length,
+      called: todayLogs.length,
+      remaining,
+      interested,
+    };
+  });
+
+  return NextResponse.json({
+    kpis: {
+      totalLeads,
+      unassigned,
+      assignedToday,
+      callsToday,
+      interestedToday,
+      followUpsDueToday,
+      wonThisMonth,
+    },
+    chart14Days: chartDays,
+    callerToday,
+  });
 }

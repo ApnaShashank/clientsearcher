@@ -1,113 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0B0B0C;
-  --card: #111111;
-  --card-hover: #161617;
-  --border: #1F1F1F;
-  --text-primary: #FFFFFF;
-  --text-muted: #B4B4B4;
-  --text-dark: #8F8F8F;
-}
-
-:root.light, .light {
-  --background: #F8F9FA;
+  --background: #F5F5F3;
   --card: #FFFFFF;
-  --card-hover: #F1F3F5;
-  --border: #E9ECEF;
+  --card-muted: #F9F9F7;
+  --border: #E8E8E4;
   --text-primary: #111111;
-  --text-muted: #595959;
-  --text-dark: #767676;
+  --text-muted: #737370;
+  --accent: #FF5C1C;
+  --accent-soft: #FFF0EA;
 }
 
 @theme {
-  --color-primary: #38BDF8;
-  --color-secondary: #848484;
   --color-background: var(--background);
   --color-card: var(--card);
-  --color-card-hover: var(--card-hover);
   --color-border: var(--border);
   --color-text-primary: var(--text-primary);
   --color-text-muted: var(--text-muted);
-  --color-text-dark: var(--text-dark);
-  
-  --font-sans: "Inter", "Geist", "Satoshi", system-ui, -apple-system, sans-serif;
-  
-  --animate-fade-in: fade-in 0.2s ease-out;
-  --animate-slide-in: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-pulse-subtle: pulse-subtle 2s infinite ease-in-out;
+  --color-accent: var(--accent);
+  --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+body {
+  background-color: #F5F5F3;
+  color: #111111;
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-@keyframes slide-in {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+/* Soft Finexy card */
+.crm-card {
+  background-color: #FFFFFF;
+  border: 1px solid #EBEBE7;
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 14px rgba(17, 17, 17, 0.03);
 }
 
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
+/* Pill primary button */
+.btn-pill-dark {
+  background-color: #111111;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn-pill-dark:hover {
+  background-color: #272725;
+}
+.btn-pill-dark:active {
+  transform: scale(0.98);
 }
 
-/* Custom Scrollbar */
+/* Pill secondary button */
+.btn-pill-light {
+  background-color: #FFFFFF;
+  color: #111111;
+  border: 1px solid #E2E2DC;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+.btn-pill-light:hover {
+  background-color: #F5F5F3;
+}
+
+/* Orange accent button */
+.btn-pill-orange {
+  background-color: #FF5C1C;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn-pill-orange:hover {
+  background-color: #E84E10;
+}
+.btn-pill-orange:active {
+  transform: scale(0.98);
+}
+
+/* Clean scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: #F5F5F3;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #38BDF8;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  overflow-x: hidden;
-}
-
-/* Selection Highlight */
-::selection {
-  background-color: rgba(56, 189, 248, 0.2);
-  color: #38BDF8;
-}
-
-/* Premium gradient glows for borders */
-.glow-border {
-  position: relative;
-}
-.glow-border::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(90deg, #1F1F1F, #38BDF8, #1F1F1F);
-  z-index: -1;
-  border-radius: inherit;
-  opacity: 0.15;
-  transition: opacity 0.3s;
-}
-.glow-border:hover::after {
-  opacity: 0.4;
-}
-
-/* Linear style modern buttons */
-.btn-primary {
-  background-color: #38BDF8;
-  color: #000000;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.btn-primary:hover {
-  background-color: #58caff;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  background: #D8D8D2;
+  border-radius: 9999px;
 }

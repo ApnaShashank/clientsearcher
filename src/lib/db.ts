@@ -31,6 +31,7 @@ declare global {
   var __creightwebDb: Db | null | undefined;
   var __creightwebStore: InMemoryStore | undefined;
   var __creightwebIndexesReady: boolean | undefined;
+  var __creightwebAdminSynced: boolean | undefined;
 }
 
 function getMemoryStore(): InMemoryStore {
@@ -142,22 +143,41 @@ export async function ensureSeeded(): Promise<void> {
   }
 
   const usersCol = db.collection<User>("users");
-  const existingAdmin = await usersCol.findOne({ role: "admin" });
-  if (!existingAdmin) {
+  if (!global.__creightwebAdminSynced) {
+    const existingAdmin = await usersCol.findOne({ role: "admin" });
     const passwordHash = await bcrypt.hash(adminPassword, 10);
-    await usersCol.insertOne({
-      id: "admin_1",
-      name: adminName,
-      username: adminUsername,
-      passwordHash,
-      role: "admin",
-      phone: "",
-      homeCity: "Azamgarh",
-      workingAreas: [],
-      preferredCategories: [],
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    });
+    if (!existingAdmin) {
+      await usersCol.insertOne({
+        id: "admin_1",
+        name: adminName,
+        username: adminUsername,
+        passwordHash,
+        role: "admin",
+        phone: "",
+        homeCity: "Azamgarh",
+        workingAreas: [],
+        preferredCategories: [],
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      // Sync env credentials & upgrade legacy admin docs that lacked username/passwordHash
+      await usersCol.updateOne(
+        { role: "admin" },
+        {
+          $set: {
+            id: existingAdmin.id || "admin_1",
+            name: adminName,
+            username: adminUsername,
+            passwordHash,
+            role: "admin",
+            isActive: true,
+            updatedAt: new Date().toISOString(),
+          },
+        }
+      );
+    }
+    global.__creightwebAdminSynced = true;
   }
 }
 

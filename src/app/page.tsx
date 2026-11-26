@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -82,69 +83,125 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-16">
-        {/* 1. Hero */}
-        <section className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EBEBE7] text-xs font-semibold text-[#111111]">
-            <IndianRupee className="w-3.5 h-3.5 text-[#FF5C1C]" />
-            <span>₹15,000 – ₹20,000 / month + Performance Incentives</span>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-14">
+        {/* 1. Hero — 2 columns on desktop; mobile stacks headline -> illustration -> buttons */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+          <div className="lg:col-span-6 space-y-4 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EBEBE7] text-xs font-semibold text-[#111111]">
+              <IndianRupee className="w-3.5 h-3.5 text-[#FF5C1C]" />
+              <span>₹15,000 – ₹20,000 / month + Performance Incentives</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.08]">
+              Work From Home — Calling Job
+            </h1>
+
+            <p className="text-base text-[#737370] max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              Join Creightweb as a Remote Telecaller. Call local businesses from
+              your smartphone using our simple CRM app, pitch websites, and
+              earn a fixed monthly salary plus incentives.
+            </p>
+
+            {/* Mobile illustration between headline/subtext and buttons */}
+            <div className="lg:hidden py-2">
+              <Image
+                src="/illustrations/hero-caller.png"
+                alt="Creightweb remote telecaller working from home with headset and phone"
+                width={1200}
+                height={700}
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="w-full h-auto max-w-md mx-auto"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
+              <Link
+                href="/apply"
+                className="btn-pill-orange px-8 py-4 text-base inline-flex items-center gap-2 shadow-[0_8px_24px_rgba(255,92,28,0.28)]"
+              >
+                <span>Apply Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/login"
+                className="btn-pill-light px-6 py-4 text-sm font-semibold"
+              >
+                Already Registered? Login
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08]">
-            Work From Home — Calling Job
-          </h1>
-
-          <p className="text-base sm:text-lg text-[#737370] max-w-2xl mx-auto leading-relaxed">
-            Join Creightweb as a Remote Telecaller. Call local businesses from
-            your smartphone using our simple CRM app, pitch websites, and earn a
-            fixed monthly salary plus incentives.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link
-              href="/apply"
-              className="btn-pill-orange px-8 py-4 text-base inline-flex items-center gap-2 shadow-[0_8px_24px_rgba(255,92,28,0.28)]"
-            >
-              <span>Apply Now</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="btn-pill-light px-6 py-4 text-sm font-semibold"
-            >
-              Already Registered? Login
-            </Link>
+          <div className="hidden lg:block lg:col-span-6">
+            <Image
+              src="/illustrations/hero-caller.png"
+              alt="Creightweb remote telecaller working from home with headset and phone"
+              width={1200}
+              height={700}
+              priority
+              sizes="50vw"
+              className="w-full h-auto"
+            />
           </div>
         </section>
 
-        {/* 2. About Creightweb */}
-        <section className="crm-card p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-4">
+        {/* 2. About Creightweb — text left, illustration right on desktop */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-6 crm-card p-6 sm:p-8 space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
               About Creightweb
             </span>
-            <h2 className="text-2xl font-bold mt-1">
+            <h2 className="text-2xl sm:text-3xl font-bold">
               We build websites for local Indian businesses.
             </h2>
+            <p className="text-sm sm:text-base text-[#737370] leading-relaxed">
+              Creightweb helps restaurants, clinics, hospitals, salons, gyms,
+              coaching institutes, and local shops go online with modern,
+              affordable websites, digital menus, Google Business setups, and
+              social media. Our telecallers connect with business owners over
+              the phone and help them see how a professional website brings
+              more customers.
+            </p>
           </div>
-          <p className="md:col-span-8 text-sm sm:text-base text-[#737370] leading-relaxed">
-            Creightweb helps restaurants, clinics, hospitals, salons, gyms,
-            coaching institutes, and local shops go online with modern,
-            affordable websites, digital menus, Google Business setups, and
-            social media. Our telecallers connect with business owners over the
-            phone and help them see how a professional website brings more
-            customers.
-          </p>
+          <div className="lg:col-span-6">
+            <Image
+              src="/illustrations/about-businesses.png"
+              alt="Local restaurant, dental clinic, and salon connected to a modern website"
+              width={1200}
+              height={700}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="w-full h-auto max-w-lg mx-auto"
+            />
+          </div>
         </section>
 
-        {/* 3. What you will do */}
-        <section className="space-y-5">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
-              Daily Work
-            </span>
-            <h2 className="text-2xl font-bold mt-1">What you will do</h2>
+        {/* 3. What you will do — medium illustration at top next to heading */}
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+                Daily Work
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold mt-1">
+                What you will do
+              </h2>
+              <p className="text-sm text-[#737370] mt-1 max-w-md">
+                Simple, guided daily calling directly from your phone — no
+                complicated spreadsheets.
+              </p>
+            </div>
+            <div className="w-44 sm:w-52 mx-auto sm:mx-0 shrink-0">
+              <Image
+                src="/illustrations/daily-work-app.jpg"
+                alt="Smartphone with Creightweb calling app and one-tap call button"
+                width={600}
+                height={600}
+                sizes="220px"
+                className="w-full h-auto rounded-3xl"
+              />
+            </div>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -184,25 +241,61 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 4. What you get */}
+        {/* 4. What you get — prominent salary card beside salary-growth.png */}
         <section className="space-y-5">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
               Benefits
             </span>
-            <h2 className="text-2xl font-bold mt-1">What you get</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mt-1">What you get</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div className="lg:col-span-6 space-y-4">
+              <div className="rounded-3xl p-6 bg-[#FF5C1C] text-white space-y-2 shadow-[0_8px_24px_rgba(255,92,28,0.25)]">
+                <div className="text-xs font-bold uppercase tracking-wider text-white/85">
+                  Fixed Monthly Pay
+                </div>
+                <h3 className="font-bold text-2xl">
+                  ₹15,000 – ₹20,000 / month
+                </h3>
+                <p className="text-sm text-white/90 leading-relaxed">
+                  Fixed monthly salary based on your role and experience, plus
+                  performance incentives for interested leads, fixed meetings,
+                  and closed clients.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="crm-card p-5 space-y-1.5">
+                  <h3 className="font-bold text-base">Performance Incentives</h3>
+                  <p className="text-xs sm:text-sm text-[#737370]">
+                    Earn extra money for interested leads, meetings, and closed
+                    clients.
+                  </p>
+                </div>
+                <div className="crm-card p-5 space-y-1.5">
+                  <h3 className="font-bold text-base">100% Work From Home</h3>
+                  <p className="text-xs sm:text-sm text-[#737370]">
+                    Work comfortably from home with your smartphone and internet.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <Image
+                src="/illustrations/salary-growth.png"
+                alt="Growing earnings chart, calendar, and monthly salary coins"
+                width={1200}
+                height={700}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="w-full h-auto max-w-lg mx-auto"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              {
-                title: "Fixed Salary ₹15,000 – ₹20,000",
-                desc: "Monthly fixed salary based on your role and experience.",
-                accent: true,
-              },
-              {
-                title: "Performance Incentives",
-                desc: "Earn extra money for interested leads, fixed meetings, and closed clients.",
-              },
               {
                 title: "Ready-Made Business Leads",
                 desc: "No searching needed — verified local business numbers are delivered to your app daily.",
@@ -215,23 +308,10 @@ export default function LandingPage() {
                 title: "Full Training & Pricing Guide",
                 desc: "Step-by-step video training and clear rate cards so you always know what to say.",
               },
-              {
-                title: "100% Work From Home",
-                desc: "Work comfortably from home with your smartphone and internet connection.",
-              },
             ].map((b) => (
-              <div
-                key={b.title}
-                className={`rounded-3xl p-5 space-y-1.5 ${
-                  b.accent ? "bg-[#FF5C1C] text-white" : "crm-card"
-                }`}
-              >
+              <div key={b.title} className="crm-card p-5 space-y-1.5">
                 <h3 className="font-bold text-base">{b.title}</h3>
-                <p
-                  className={`text-xs sm:text-sm leading-relaxed ${
-                    b.accent ? "text-white/90" : "text-[#737370]"
-                  }`}
-                >
+                <p className="text-xs sm:text-sm text-[#737370] leading-relaxed">
                   {b.desc}
                 </p>
               </div>
@@ -241,13 +321,11 @@ export default function LandingPage() {
 
         {/* 5. Our Work (Dynamic Showcase) */}
         <section className="space-y-5">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
-                Portfolio
-              </span>
-              <h2 className="text-2xl font-bold mt-1">Our Work</h2>
-            </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
+              Portfolio
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold mt-1">Our Work</h2>
           </div>
           {showcase.length === 0 ? (
             <div className="crm-card p-8 text-center text-sm text-[#737370]">
@@ -350,14 +428,28 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 7. How it works (4 steps) */}
+        {/* 7. How it works — full-width thin strip directly ABOVE the 4 step cards */}
         <section className="space-y-5">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[#FF5C1C]">
               Onboarding Process
             </span>
-            <h2 className="text-2xl font-bold mt-1">How it works</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mt-1">
+              How it works
+            </h2>
           </div>
+
+          <div className="w-full">
+            <Image
+              src="/illustrations/steps-journey.png"
+              alt="4-step onboarding journey from application to starting work"
+              width={1400}
+              height={420}
+              sizes="100vw"
+              className="w-full h-auto"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -427,25 +519,41 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* CTA Banner */}
-        <section className="bg-[#111111] text-white rounded-3xl p-8 sm:p-10 text-center space-y-4">
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            Ready to start earning from home?
-          </h2>
-          <p className="text-sm text-white/75 max-w-xl mx-auto">
-            Takes 3 minutes to apply and sign the digital agreement. Zero fees.
-          </p>
-          <Link
-            href="/apply"
-            className="btn-pill-orange px-8 py-3.5 text-sm inline-flex items-center gap-2"
-          >
-            <span>Apply Now</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+        {/* 9. Final CTA Black Banner — text + button left, transparent illustration right */}
+        <section className="bg-[#111111] text-white rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-7 space-y-4 text-center lg:text-left">
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Ready to start earning from home?
+            </h2>
+            <p className="text-sm sm:text-base text-white/75 max-w-xl mx-auto lg:mx-0">
+              Takes 3 minutes to apply and sign the digital agreement. Zero
+              fees, verified leads, and monthly salary + incentives.
+            </p>
+            <div>
+              <Link
+                href="/apply"
+                className="btn-pill-orange px-8 py-3.5 text-sm inline-flex items-center gap-2"
+              >
+                <span>Apply Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5">
+            <Image
+              src="/illustrations/cta-success.png"
+              alt="Happy Creightweb caller celebrating approval"
+              width={1200}
+              height={700}
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="w-full h-auto max-w-sm mx-auto"
+            />
+          </div>
         </section>
       </main>
 
-      {/* 9. Contact Footer */}
+      {/* Contact Footer */}
       <footer className="bg-white border-t border-[#EBEBE7]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

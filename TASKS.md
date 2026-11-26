@@ -55,3 +55,4 @@
 ## Phase 7B: Guide, Pricing Manager & Training Video
 - [x] **7B.1 Admin Guide & Pricing Manager (`/admin/guide`)**: Built CRUD for pricing rows (seeded with 5 default rows), editable Hinglish negotiation rules, and Google Drive Training Video URL setting.
 - [x] **7B.2 Caller Guide Tab (`/caller/guide`)**: Embedded Drive training video preview, Price List cards with domain badges, Negotiation Rules, and Showcase shortcut (Approved callers only).
+- [x] **7B.3 Brand Logo, Dark Mode & Landing Illustrations**: Added `public/creightweb-logo.jpg` (`BrandLogo`), full `ThemeToggle` dark mode, and all 6 transparent illustrations to `public/illustrations/` and `src/app/page.tsx`.

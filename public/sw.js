@@ -1,5 +1,5 @@
-const CACHE_NAME = "creightweb-crm-shell-v1";
-const SHELL_URLS = ["/login", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "creightweb-crm-shell-v2";
+const SHELL_URLS = ["/login", "/manifest.webmanifest", "/creightweb-logo.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
